@@ -31,6 +31,7 @@
 #include <vtkScalarBarWidget.h>
 #include <vtkScalarBarRepresentation.h>
 #include <vtkVolumeProperty.h>
+#include<stdio.h>
 
 using namespace std;
 using namespace boost::filesystem;
@@ -38,6 +39,8 @@ using namespace boost::filesystem;
 class MyRenderer {
 public:
     vector<vector<double>> myLookTable;
+    string fileBaseDir;
+    vector<path> fileNames;
 
     MyRenderer() {
         data_axis_x = 80;
@@ -85,6 +88,27 @@ public:
     }
 
     void readFile(string fileName) {
+        cout << "read file " << fileName << endl;
+
+        FILE *f = fopen(fileName.c_str(), "r");
+        // pass 2 lines
+        const size_t line_size = 300;
+        char *line = (char *) malloc(line_size);
+        fgets(line, line_size, f);
+        fgets(line, line_size, f);
+        //
+        float x, y, z, t;
+        int volume_size = data_axis_x * data_axis_y * data_axis_z;
+//        float temperatures[volume_size] = {0};
+        vector<vector<vector<int>>> xyzs(data_axis_x, vector<vector<int>>(data_axis_z, vector<int>(data_axis_y)));
+
+        for (int i = 0; i < volume_size; ++i) {
+            fscanf(f, "%f %f %f %f", &x, &z, &y, &t);
+//            printf("%d %f %f %f %f\n", i, x, z, y, t);
+            xyzs[positionNormalize(x)][positionNormalize(z)][positionNormalize(y)] =
+                    temperatureNormalize(t);
+        }
+        fclose(f);
         imgData = vtkSmartPointer<vtkStructuredPoints>::New();
         imgData->SetExtent(0, data_axis_x - 1, 0, data_axis_y - 1, 0, data_axis_z - 1);
         imgData->AllocateScalars(VTK_UNSIGNED_CHAR, 1);
@@ -95,10 +119,10 @@ public:
             for (int y = 0; y < dims[1]; y++) {
                 for (int x = 0; x < dims[0]; x++) {
                     unsigned char *pixel = static_cast<unsigned char *>(imgData->GetScalarPointer(x, y, z));
-                    pixel[0] = increaseI % 255;
+                    pixel[0] = xyzs[x][z][y];
                 }
             }
-            increaseI += 1;
+//            increaseI += 1;
         }
     }
 
@@ -177,17 +201,24 @@ private:
     int data_axis_z;
     int data_axis_y;
     int temperature_min;
-    string fileBaseDir;
     vtkSmartPointer<vtkRenderer> renderer;
     vtkSmartPointer<vtkRenderWindow> renderWin;
     vtkSmartPointer<vtkRenderWindowInteractor> renderInteractor;
     vtkSmartPointer<vtkImageImport> dataImporter;
     vtkSmartPointer<vtkOpenGLGPUVolumeRayCastMapper> volumeMapper;
-    vector<path> fileNames;
     vtkSmartPointer<vtkStructuredPoints> imgData;
     vtkIdType colorNumber;
     int rgbaLength;
     vtkSmartPointer<vtkScalarBarWidget> scalarBarWidget;
+
+    int positionNormalize(float scalar) {
+        return (scalar - 5) / 10;
+    }
+
+    int temperatureNormalize(float t) {
+        return (t - temperature_min) / (temperature_max - temperature_min) * 254 + 1;
+    }
+
 };
 
 int main() {
@@ -195,7 +226,7 @@ int main() {
     myRenderer->init();
     myRenderer->addScalarBarWidget();
     myRenderer->listTemperatureFiles();
-    myRenderer->readFile("");
+    myRenderer->readFile(myRenderer->fileNames[0].string());
     myRenderer->prepareVolume();
     myRenderer->render();
 }
