@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <vtkTextActor.h>
 #include <vtkStructuredPointsReader.h>
 #include <vtkVolumeRayCastCompositeFunction.h>
 #include <vtkVolumeRayCastMapper.h>
@@ -39,6 +40,8 @@
 #include <vtkDataSetMapper.h>
 #include <vtkAxesActor.h>
 #include <vtkOrientationMarkerWidget.h>
+#include <vtkTextRepresentation.h>
+#include <vtkTextWidget.h>
 
 using namespace std;
 using namespace boost::filesystem;
@@ -55,7 +58,6 @@ public:
         data_axis_y = 36;
         temperature_min = 18;
         temperature_max = 30;
-        fileBaseDir = "/home/honhe/Downloads/volume_render/temperature_data/idw_penalty-result_20161024/";
         renderer = vtkSmartPointer<vtkRenderer>::New();
         renderWin = vtkSmartPointer<vtkRenderWindow>::New();
         renderWin->AddRenderer(renderer);
@@ -66,7 +68,8 @@ public:
         rgbaLength = 4;
     }
 
-    void init() {
+    void init(string fileBaseDir) {
+        this->fileBaseDir = fileBaseDir;
         vector<vector<double>> p((unsigned long) colorNumber, vector<double>(4));
         myLookTable = p;
         renderer->SetBackground(0.1, 0.1, 0.1);
@@ -96,6 +99,9 @@ public:
     void readFile(string fileName) {
         cout << "read file " << fileName << endl;
 
+        string subName = fileName.substr(fileName.length() - 24, 20);
+        text_actor->SetInput(subName.c_str());
+
         FILE *f = fopen(fileName.c_str(), "r");
         // pass 2 lines
         const size_t line_size = 300;
@@ -105,7 +111,6 @@ public:
         //
         float x, y, z, t;
         int volume_size = data_axis_x * data_axis_y * data_axis_z;
-//        float temperatures[volume_size] = {0};
         vector<vector<vector<int>>> xyzs((unsigned long) data_axis_x,
                                          vector<vector<int>>((unsigned long) data_axis_z,
                                                              vector<int>((unsigned long) data_axis_y)));
@@ -123,11 +128,11 @@ public:
         int *dims = imgData->GetDimensions();
         int increaseI = 1;
 
-        for (int z = 0; z < dims[2]; z++) {
-            for (int y = 0; y < dims[1]; y++) {
-                for (int x = 0; x < dims[0]; x++) {
-                    unsigned char *pixel = static_cast<unsigned char *>(imgData->GetScalarPointer(x, y, z));
-                    pixel[0] = xyzs[x][z][y];
+        for (int k = 0; k < dims[2]; k++) {
+            for (int j = 0; j < dims[1]; j++) {
+                for (int i = 0; i < dims[0]; i++) {
+                    unsigned char *pixel = static_cast<unsigned char *>(imgData->GetScalarPointer(i, j, k));
+                    pixel[0] = (unsigned char) xyzs[i][k][j];
                 }
             }
 //            increaseI += 1;
@@ -147,7 +152,7 @@ public:
         lookupTable->SetRampToLinear();
         lookupTable->SetNumberOfTableValues(colorNumber);
         lookupTable->Build();
-        // 使用库内置好的颜色值，Build 再获取，不然是无效值
+        // 使用库内配置好的颜色值，Build 再获取，不然是无效值
         for (int i = 0; i < colorNumber; ++i) {
             vector<double> &row = myLookTable[i];
             double *tableValue = lookupTable->GetTableValue(i);
@@ -171,11 +176,11 @@ public:
     }
 
     void addGrid() {
-        int padding = 0.5;
+        float padding = 0.5;
         const vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-        for (int k : vector<int>{0 + padding, data_axis_z - 1 - padding}) {
-            for (int j : vector<int>{0 + padding, data_axis_y - 1 - padding}) {
-                for (int i  : vector<int>{0 + padding, data_axis_x - 1 - padding}) {
+        for (int k : vector<int>{0 + padding, data_axis_z - padding}) {
+            for (int j : vector<int>{0 + padding, data_axis_y - padding}) {
+                for (int i  : vector<int>{0 + padding, data_axis_x - padding}) {
                     points->InsertNextPoint(i, j, k);
                 }
             }
@@ -238,7 +243,7 @@ public:
         }
         const vtkSmartPointer<vtkPiecewiseFunction> alphaChannelFunction = vtkSmartPointer<vtkPiecewiseFunction>::New();
         alphaChannelFunction->AddPoint(0, 0.00);
-        alphaChannelFunction->AddPoint(1, 0.4);
+        alphaChannelFunction->AddPoint(1, 0.4);     // for floor
         alphaChannelFunction->AddPoint(2, 0.4);
         alphaChannelFunction->AddPoint(50, 0.08);
         alphaChannelFunction->AddPoint(60, 0.05);
@@ -273,12 +278,27 @@ public:
         pCamera->Azimuth(-40);
     }
 
+    void addTextWidget() {
+        text_actor = vtkSmartPointer<vtkTextActor>::New();
+        text_actor->SetInput("日期");
+        text_actor->GetTextProperty()->SetColor(0.9, .9, 0.9);
+        const vtkSmartPointer<vtkTextRepresentation> &text_representation = vtkSmartPointer<vtkTextRepresentation>::New();
+        text_representation->GetPositionCoordinate()->SetValue(0.3, 0.85);
+        text_representation->GetPosition2Coordinate()->SetValue(0.3, 0.2);
+        text_widget = vtkSmartPointer<vtkTextWidget>::New();
+        text_widget->SetRepresentation(text_representation);
+        text_widget->SetInteractor(renderInteractor);
+        text_widget->SetTextActor(text_actor);
+//        text_widget->SelectableOff();
+//        text_widget->GetBorderRepresentation()->SetShowBorderToOff();
+        text_widget->On();
+    }
+
     virtual ~MyRenderer() {
 
     }
 
 private:
-
     int temperature_max;
     int data_axis_x;
     int data_axis_z;
@@ -302,12 +322,16 @@ private:
         return (t - temperature_min) / (temperature_max - temperature_min) * 254 + 1;
     }
 
+    vtkSmartPointer<vtkTextActor> text_actor;
+    vtkSmartPointer<vtkTextWidget> text_widget;
 };
 
 int main() {
+    string fileBaseDir = "/home/honhe/Downloads/volume_render/temperature_data/idw_penalty-result_20161024/";
     MyRenderer *myRenderer = new MyRenderer();
-    myRenderer->init();
+    myRenderer->init(fileBaseDir);
     myRenderer->addScalarBarWidget();
+    myRenderer->addTextWidget();
     myRenderer->listTemperatureFiles();
     myRenderer->readFile(myRenderer->fileNames[0].string());
     myRenderer->prepareVolume();
