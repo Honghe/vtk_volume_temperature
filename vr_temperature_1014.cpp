@@ -126,7 +126,6 @@ public:
         imgData->SetExtent(0, data_axis_x - 1, 0, data_axis_y - 1, 0, data_axis_z - 1);
         imgData->AllocateScalars(VTK_UNSIGNED_CHAR, 1);
         int *dims = imgData->GetDimensions();
-        int increaseI = 1;
 
         for (int k = 0; k < dims[2]; k++) {
             for (int j = 0; j < dims[1]; j++) {
@@ -135,7 +134,6 @@ public:
                     pixel[0] = (unsigned char) xyzs[i][k][j];
                 }
             }
-//            increaseI += 1;
         }
     }
 
@@ -290,8 +288,8 @@ public:
         text_widget->SetRepresentation(text_representation);
         text_widget->SetInteractor(renderInteractor);
         text_widget->SetTextActor(text_actor);
-//        text_widget->SelectableOff();
-//        text_widget->GetBorderRepresentation()->SetShowBorderToOff();
+        text_widget->SelectableOff();
+        text_widget->GetBorderRepresentation()->SetShowBorderToOff();
         text_widget->On();
     }
 
