@@ -259,6 +259,7 @@ public:
         volumeMapper->SetInputData(imgData);
         volumeMapper->SetSampleDistance(1);
         volumeMapper->SetImageSampleDistance(1);
+        volumeMapper->AutoAdjustSampleDistancesOff();   // for better display when rotate
         const vtkSmartPointer<vtkVolume> volume = vtkSmartPointer<vtkVolume>::New();
         volume->SetMapper(volumeMapper);
         volume->SetProperty(volumeProperty);
