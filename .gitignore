@@ -91,3 +91,5 @@ fabric.properties
 
 .idea
 output/
+*.gz
+*.tar
