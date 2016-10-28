@@ -31,7 +31,14 @@
 #include <vtkScalarBarWidget.h>
 #include <vtkScalarBarRepresentation.h>
 #include <vtkVolumeProperty.h>
-#include<stdio.h>
+#include<vtkPoints.h>
+#include <vtkVolumePicker.h>
+#include <vtkCellArray.h>
+#include <vtkLine.h>
+#include <vtkPolyData.h>
+#include <vtkDataSetMapper.h>
+#include <vtkAxesActor.h>
+#include <vtkOrientationMarkerWidget.h>
 
 using namespace std;
 using namespace boost::filesystem;
@@ -54,17 +61,16 @@ public:
         renderWin->AddRenderer(renderer);
         renderInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
         renderInteractor->SetRenderWindow(renderWin);
-        dataImporter = vtkSmartPointer<vtkImageImport>::New();
         volumeMapper = vtkSmartPointer<vtkOpenGLGPUVolumeRayCastMapper>::New();
         colorNumber = 256;
         rgbaLength = 4;
     }
 
     void init() {
-        vector<vector<double>> p(colorNumber, vector<double>(4));
+        vector<vector<double>> p((unsigned long) colorNumber, vector<double>(4));
         myLookTable = p;
         renderer->SetBackground(0.1, 0.1, 0.1);
-        renderWin->SetSize(900, 800);
+        renderWin->SetSize(1000, 800);
         renderInteractor->Initialize();
     }
 
@@ -100,7 +106,9 @@ public:
         float x, y, z, t;
         int volume_size = data_axis_x * data_axis_y * data_axis_z;
 //        float temperatures[volume_size] = {0};
-        vector<vector<vector<int>>> xyzs(data_axis_x, vector<vector<int>>(data_axis_z, vector<int>(data_axis_y)));
+        vector<vector<vector<int>>> xyzs((unsigned long) data_axis_x,
+                                         vector<vector<int>>((unsigned long) data_axis_z,
+                                                             vector<int>((unsigned long) data_axis_y)));
 
         for (int i = 0; i < volume_size; ++i) {
             fscanf(f, "%f %f %f %f", &x, &z, &y, &t);
@@ -162,6 +170,66 @@ public:
         scalarBarWidget->On();
     }
 
+    void addGrid() {
+        int padding = 0.5;
+        const vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+        for (int k : vector<int>{0 + padding, data_axis_z - 1 - padding}) {
+            for (int j : vector<int>{0 + padding, data_axis_y - 1 - padding}) {
+                for (int i  : vector<int>{0 + padding, data_axis_x - 1 - padding}) {
+                    points->InsertNextPoint(i, j, k);
+                }
+            }
+        }
+        const vtkSmartPointer<vtkCellArray> &lines = vtkSmartPointer<vtkCellArray>::New();
+        for (int i: vector<int>{0, 4}) {
+            vtkLine *line = vtkLine::New();
+            line->GetPointIds()->SetId(0, 0 + i);
+            line->GetPointIds()->SetId(1, 1 + i);
+            lines->InsertNextCell(line);
+
+            line = vtkLine::New();
+            line->GetPointIds()->SetId(0, 2 + i);
+            line->GetPointIds()->SetId(1, 3 + i);
+            lines->InsertNextCell(line);
+
+            line = vtkLine::New();
+            line->GetPointIds()->SetId(0, 0 + i);
+            line->GetPointIds()->SetId(1, 2 + i);
+            lines->InsertNextCell(line);
+
+            line = vtkLine::New();
+            line->GetPointIds()->SetId(0, 1 + i);
+            line->GetPointIds()->SetId(1, 3 + i);
+            lines->InsertNextCell(line);
+        }
+
+        for (int l = 0; l < 4; ++l) {
+            vtkLine *line = vtkLine::New();
+            line->GetPointIds()->SetId(0, l);
+            line->GetPointIds()->SetId(1, 4 + l);
+            lines->InsertNextCell(line);
+        }
+        const vtkSmartPointer<vtkPolyData> &polyData = vtkSmartPointer<vtkPolyData>::New();
+        polyData->SetPoints(points);
+        polyData->SetLines(lines);
+        const vtkSmartPointer<vtkDataSetMapper> &mapper = vtkSmartPointer<vtkDataSetMapper>::New();
+        mapper->SetInputData(polyData);
+        const vtkSmartPointer<vtkActor> &actor = vtkSmartPointer<vtkActor>::New();
+        actor->SetMapper(mapper);
+        renderer->AddActor(actor);
+    }
+
+    void addOrientationMarkerWidget() {
+        const vtkSmartPointer<vtkAxesActor> &axesActor = vtkSmartPointer<vtkAxesActor>::New();
+        orientationMarkerWidget = vtkSmartPointer<vtkOrientationMarkerWidget>::New();
+        orientationMarkerWidget->SetOutlineColor(0.93, 0.57, 0.13);
+        orientationMarkerWidget->SetOrientationMarker(axesActor);
+        orientationMarkerWidget->SetInteractor(renderInteractor);
+        orientationMarkerWidget->SetViewport(0, 0, 0.2, 0.2);;
+        orientationMarkerWidget->SetEnabled(1);
+        orientationMarkerWidget->SetInteractive(1);
+    }
+
     void prepareVolume() {
         const vtkSmartPointer<vtkColorTransferFunction> colorTransferFunction = vtkSmartPointer<vtkColorTransferFunction>::New();
         for (int i = 2; i < colorNumber; ++i) {
@@ -184,10 +252,25 @@ public:
         volumeProperty->SetColor(colorTransferFunction);
         volumeProperty->SetScalarOpacity(alphaChannelFunction);
         volumeMapper->SetInputData(imgData);
+        volumeMapper->SetSampleDistance(1);
+        volumeMapper->SetImageSampleDistance(1);
         const vtkSmartPointer<vtkVolume> volume = vtkSmartPointer<vtkVolume>::New();
         volume->SetMapper(volumeMapper);
         volume->SetProperty(volumeProperty);
         renderer->AddVolume(volume);
+    }
+
+    void setCamera() {
+        vtkCamera *pCamera = renderer->GetActiveCamera();
+        vtkVolumeCollection *pCollection = renderer->GetVolumes();
+        vtkVolume *pVolume = (vtkVolume *) pCollection->GetItemAsObject(0);
+        pCamera->SetFocalPoint(pVolume->GetCenter());
+        pCamera->SetViewUp(0, 1, 0);
+//        pCamera->SetPosition(data_axis_x * 3, data_axis_y * 3, -data_axis_z * 2);
+        pCamera->SetPosition(0, 0, -200);
+        double *position = pCamera->GetPosition();
+        pCamera->Elevation(30);
+        pCamera->Azimuth(-40);
     }
 
     virtual ~MyRenderer() {
@@ -204,9 +287,9 @@ private:
     vtkSmartPointer<vtkRenderer> renderer;
     vtkSmartPointer<vtkRenderWindow> renderWin;
     vtkSmartPointer<vtkRenderWindowInteractor> renderInteractor;
-    vtkSmartPointer<vtkImageImport> dataImporter;
     vtkSmartPointer<vtkOpenGLGPUVolumeRayCastMapper> volumeMapper;
     vtkSmartPointer<vtkStructuredPoints> imgData;
+    vtkSmartPointer<vtkOrientationMarkerWidget> orientationMarkerWidget;
     vtkIdType colorNumber;
     int rgbaLength;
     vtkSmartPointer<vtkScalarBarWidget> scalarBarWidget;
@@ -228,5 +311,8 @@ int main() {
     myRenderer->listTemperatureFiles();
     myRenderer->readFile(myRenderer->fileNames[0].string());
     myRenderer->prepareVolume();
+    myRenderer->addGrid();
+    myRenderer->addOrientationMarkerWidget();
+    myRenderer->setCamera();
     myRenderer->render();
 }
