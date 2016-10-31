@@ -14,8 +14,8 @@ include(${VTK_USE_FILE})
 include_directories(${Boost_INCLUDE_DIRS})
 
 set(SOURCE_FILES
-
-        vr_temperature_1014.cpp)
+        vr_temperature_1014.cpp
+        vr_temperature_1014_by_ruilang.cpp)
 
 foreach(name ${SOURCE_FILES})
     add_executable(${name}  ${name} )
