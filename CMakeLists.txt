@@ -12,10 +12,12 @@ find_package(Boost REQUIRED
         )
 include(${VTK_USE_FILE})
 include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR})
 
 set(SOURCE_FILES
         vr_temperature_1014.cpp
-        vr_temperature_1014_by_ruilang.cpp)
+        vr_temperature_1014_by_ruilang.cpp
+        vr_temperature_1014_newcolormap.cpp)
 
 foreach(name ${SOURCE_FILES})
     add_executable(${name}  ${name} )

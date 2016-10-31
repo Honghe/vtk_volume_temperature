@@ -42,6 +42,8 @@
 #include <vtkOrientationMarkerWidget.h>
 #include <vtkTextRepresentation.h>
 #include <vtkTextWidget.h>
+#include "./jet256colormap.h"
+
 
 using namespace std;
 using namespace boost::filesystem;
@@ -150,19 +152,22 @@ public:
         lookupTable->SetRampToLinear();
         lookupTable->SetNumberOfTableValues(colorNumber);
         lookupTable->Build();
-        // 使用库内配置好的颜色值，Build 再获取，不然是无效值
+
+        // 使用 jet 256 配色
         for (int i = 0; i < colorNumber; ++i) {
             vector<double> &row = myLookTable[i];
-            double *tableValue = lookupTable->GetTableValue(i);
+            float *tableValue = Jet256ColorMap::colormap[i];
             for (int j = 0; j < rgbaLength; ++j) {
                 row[j] = tableValue[j];
             }
+//            printf("%d %03.2f %03.2f %03.2f\n", i, row[0], row[1], row[2]);
         }
-        // 倒过来赋值
+
         for (int k = 0; k < colorNumber; ++k) {
-            vector<double> &row = myLookTable[colorNumber - 1 - k];
+            vector<double> &row = myLookTable[k];
             lookupTable->SetTableValue(k, row[0], row[1], row[2], row[3]);
         }
+
         scalarBarActor->SetLookupTable(lookupTable);
         scalarBarWidget = vtkSmartPointer<vtkScalarBarWidget>::New();
         scalarBarWidget->SetInteractor(renderInteractor);
@@ -236,7 +241,7 @@ public:
     void prepareVolume() {
         const vtkSmartPointer<vtkColorTransferFunction> colorTransferFunction = vtkSmartPointer<vtkColorTransferFunction>::New();
         for (int i = 2; i < colorNumber; ++i) {
-            vector<double> &rgba = myLookTable[colorNumber - i];
+            vector<double> &rgba = myLookTable[i];
             colorTransferFunction->AddRGBPoint(i, rgba[0], rgba[1], rgba[2]);
         }
         const vtkSmartPointer<vtkPiecewiseFunction> alphaChannelFunction = vtkSmartPointer<vtkPiecewiseFunction>::New();
@@ -320,7 +325,7 @@ private:
     }
 
     int temperatureNormalize(float t) {
-        return (t - temperature_min) / (temperature_max - temperature_min) * 254 + 1;
+        return (t - temperature_min) / (temperature_max - temperature_min) * colorNumber - 2 + 1;
     }
 
     vtkSmartPointer<vtkTextActor> text_actor;
@@ -328,6 +333,7 @@ private:
 };
 
 int main() {
+
     string fileBaseDir = "/home/honhe/Downloads/volume_render/temperature_data/idw_penalty-result_20161024/";
     MyRenderer *myRenderer = new MyRenderer();
     myRenderer->init(fileBaseDir);
