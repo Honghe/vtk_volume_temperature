@@ -48,6 +48,7 @@
 #include <vtkExtractSelection.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkPointData.h>
+#include <sstream>
 
 #include "./jet256colormap.h"
 
@@ -55,123 +56,18 @@
 using namespace std;
 using namespace boost::filesystem;
 
-// Catch mouse events
 class MouseInteractorStyle : public vtkInteractorStyleTrackballCamera {
 public:
     static MouseInteractorStyle *New();
 
-    MouseInteractorStyle() {
-        selectedMapper = vtkSmartPointer<vtkDataSetMapper>::New();
-        selectedActor = vtkSmartPointer<vtkActor>::New();
-    }
+    MouseInteractorStyle();
 
-    virtual void OnRightButtonDown() {
-        // Get the location of the click (in window coordinates)
-        // 支持5个点目前
-        int *pos = this->GetInteractor()->GetEventPosition();
-
-        vtkSmartPointer<vtkVolumePicker> picker =
-                vtkSmartPointer<vtkVolumePicker>::New();
-        picker->PickClippingPlanesOn();
-        picker->SetPickClippingPlanes(100);
-        picker->GetPickClippingPlanes();
-        picker->SetTolerance(0.0005);
-        picker->SetVolumeOpacityIsovalue(0.001);    // threshold for select volume
-        // Pick from this location.
-        // 只有 x,y 没有 z,因为是平面
-        picker->Pick(pos[0], pos[1], 0, this->GetDefaultRenderer());
-
-        std::cout << "Pick pos is: " << pos[0] << " " << pos[1]
-                  << " " << endl;
-
-        double *worldPosition = picker->GetPickPosition();
-
-        std::cout << "World position is: " << worldPosition[0] << " " << worldPosition[1]
-                  << " " << worldPosition[2] << endl;
-
-        std::cout << "Cell id is: " << picker->GetCellId() << std::endl;
-
-        if (picker->GetCellId() != -1) {
-
-//            std::cout << "Pick position is: " << worldPosition[0] << " " << worldPosition[1]
-//                      << " " << worldPosition[2] << endl;
-
-            vtkSmartPointer<vtkIdTypeArray> ids =
-                    vtkSmartPointer<vtkIdTypeArray>::New();
-            ids->SetNumberOfComponents(1);
-            ids->InsertNextValue(picker->GetCellId());
-
-            vtkSmartPointer<vtkSelectionNode> selectionNode =
-                    vtkSmartPointer<vtkSelectionNode>::New();
-            selectionNode->SetFieldType(vtkSelectionNode::CELL);
-            selectionNode->SetContentType(vtkSelectionNode::INDICES);
-            selectionNode->SetSelectionList(ids);
-
-            vtkSmartPointer<vtkSelection> selection =
-                    vtkSmartPointer<vtkSelection>::New();
-            selection->AddNode(selectionNode);
-
-            vtkSmartPointer<vtkExtractSelection> extractSelection =
-                    vtkSmartPointer<vtkExtractSelection>::New();
-            extractSelection->SetInputData(0, (vtkDataObject *) this->Data.GetPointer());
-            extractSelection->SetInputData(1, selection);
-            extractSelection->Update();
-
-            // In selection
-            vtkSmartPointer<vtkUnstructuredGrid> selected =
-                    vtkSmartPointer<vtkUnstructuredGrid>::New();
-            selected->ShallowCopy(extractSelection->GetOutput());
-            cout << "selected" << endl;
-//            selected->Print(cout);
-
-            std::cout << "There are " << selected->GetNumberOfPoints()
-                      << " points in the selection." << std::endl;
-            vtkPoints *pPoints = selected->GetPoints();
-//            cout << "points scalar: " <<  endl;
-//            pPoints->Print(cout);
-
-            // 各点的属性
-            vtkPointData *pPointData = selected->GetPointData();
-            vtkDataArray *scalars = pPointData->GetScalars("ImageScalars");
-
-            for (int i = 0; i < selected->GetNumberOfPoints(); i++) {
-                std:
-                {
-                    double *pDouble = pPoints->GetPoint(i);
-                    cout << "point " << i << ": ";
-                    for (int j = 0; j < 3; j++) {
-                        cout << " " << pDouble[j];
-                    }
-                    // 点的属性值
-                    cout << " " << scalars->GetComponent(i, 0);
-                    cout << endl;
-                }
-            }
-
-            std::cout << "There are " << selected->GetNumberOfCells()
-                      << " cells in the selection." << std::endl;
-
-
-            selectedMapper->SetInputData(selected);
-
-            selectedActor->SetMapper(selectedMapper);
-            selectedActor->GetProperty()->EdgeVisibilityOn();
-            selectedActor->GetProperty()->SetEdgeColor(1, 0, 0);
-            selectedActor->GetProperty()->SetLineWidth(0.5);
-
-            this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer()->AddActor(selectedActor);
-        }
-
-        // Forward events
-        vtkInteractorStyleTrackballCamera::OnRightButtonDown();
-    }
+    virtual void OnRightButtonDown();
 
     vtkSmartPointer<vtkStructuredPoints> Data;
     vtkSmartPointer<vtkDataSetMapper> selectedMapper;
     vtkSmartPointer<vtkActor> selectedActor;
 };
-
-vtkStandardNewMacro(MouseInteractorStyle);
 
 class MyRenderer {
 public:
@@ -410,9 +306,9 @@ public:
         pCamera->Azimuth(-40);
     }
 
-    void addTextWidget() {
+    void addFileNameTextWidget() {
         text_actor = vtkSmartPointer<vtkTextActor>::New();
-        text_actor->SetInput("日期");
+        text_actor->SetInput("");
         text_actor->GetTextProperty()->SetColor(0.9, .9, 0.9);
         const vtkSmartPointer<vtkTextRepresentation> &text_representation = vtkSmartPointer<vtkTextRepresentation>::New();
         text_representation->GetPositionCoordinate()->SetValue(0.3, 0.85);
@@ -426,6 +322,32 @@ public:
         text_widget->On();
     }
 
+    void addTemperatureTextWidget() {
+        temperatureTextActor = vtkSmartPointer<vtkTextActor>::New();
+        temperatureTextActor->GetTextProperty()->SetFontFamily(VTK_FONT_FILE);
+        temperatureTextActor->GetTextProperty()->SetFontFile(
+                "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf");
+        temperatureTextActor->GetTextProperty()->SetColor(0.9, .9, 0.9);
+        temperatureTextActor->GetTextProperty()->SetFontSize(14);
+        temperatureTextActor->GetTextProperty()->SetJustificationToCentered();
+        temperatureTextActor->GetTextProperty()->SetVerticalJustificationToCentered();
+        const vtkSmartPointer<vtkTextRepresentation> &text_representation = vtkSmartPointer<vtkTextRepresentation>::New();
+        text_representation->GetPositionCoordinate()->SetValue(0.05, 0.92);
+        text_representation->GetPosition2Coordinate()->SetValue(0.06, 0.06);
+        temperatureTextWidget = vtkSmartPointer<vtkTextWidget>::New();
+        temperatureTextWidget->SetRepresentation(text_representation);
+        temperatureTextWidget->SetInteractor(renderInteractor);
+        temperatureTextWidget->SetTextActor(temperatureTextActor);
+        temperatureTextWidget->SelectableOff();
+        temperatureTextWidget->GetBorderRepresentation()->SetShowBorderToOff();
+        temperatureTextWidget->On();
+    }
+
+    void updateTemperatureTextWidget(string tmp) {
+        string header = "TMP\n";
+        temperatureTextActor->SetInput(header.append(tmp + "℃").c_str());
+    }
+
     virtual ~MyRenderer() {
 
     }
@@ -437,6 +359,23 @@ public:
         style->SetDefaultRenderer(renderer);
         style->Data = imgData;
         renderInteractor->SetInteractorStyle(style);
+    }
+
+    int positionNormalize(float scalar) {
+        return (scalar - 5) / 10;
+    }
+
+    int temperatureNormalize(float t) {
+        return (t - temperature_min) / (temperature_max - temperature_min) * colorNumber - 2 + 1;
+    }
+
+    string scalarToTemperature(int scalar) {
+        float tmp = (float)scalar / (colorNumber - 1) * (temperature_max - temperature_min) + temperature_min;
+        // set precision
+        stringstream stream;
+        stream << fixed << setprecision(1) << tmp;
+        string s = stream.str();
+        return s;
     }
 
 private:
@@ -455,25 +394,134 @@ private:
     int rgbaLength;
     vtkSmartPointer<vtkScalarBarWidget> scalarBarWidget;
 
-    int positionNormalize(float scalar) {
-        return (scalar - 5) / 10;
-    }
-
-    int temperatureNormalize(float t) {
-        return (t - temperature_min) / (temperature_max - temperature_min) * colorNumber - 2 + 1;
-    }
-
     vtkSmartPointer<vtkTextActor> text_actor;
     vtkSmartPointer<vtkTextWidget> text_widget;
+    vtkSmartPointer<vtkTextActor> temperatureTextActor;
+    vtkSmartPointer<vtkTextWidget> temperatureTextWidget;
 };
+
+MyRenderer *myRenderer;
+
+// Catch mouse events
+MouseInteractorStyle::MouseInteractorStyle() {
+    selectedMapper = vtkSmartPointer<vtkDataSetMapper>::New();
+    selectedActor = vtkSmartPointer<vtkActor>::New();
+}
+
+void MouseInteractorStyle::OnRightButtonDown() {
+    // Get the location of the click (in window coordinates)
+    // 支持5个点目前
+    int *pos = this->GetInteractor()->GetEventPosition();
+
+    vtkSmartPointer<vtkVolumePicker> picker =
+            vtkSmartPointer<vtkVolumePicker>::New();
+    picker->PickClippingPlanesOn();
+    picker->SetPickClippingPlanes(100);
+    picker->GetPickClippingPlanes();
+    picker->SetTolerance(0.0005);
+    picker->SetVolumeOpacityIsovalue(0.001);    // threshold for select volume
+    // Pick from this location.
+    // 只有 x,y 没有 z,因为是平面
+    picker->Pick(pos[0], pos[1], 0, this->GetDefaultRenderer());
+
+    std::cout << "Pick pos is: " << pos[0] << " " << pos[1]
+              << " " << endl;
+
+    double *worldPosition = picker->GetPickPosition();
+
+    std::cout << "World position is: " << worldPosition[0] << " " << worldPosition[1]
+              << " " << worldPosition[2] << endl;
+
+    std::cout << "Cell id is: " << picker->GetCellId() << std::endl;
+
+    if (picker->GetCellId() != -1) {
+
+//            std::cout << "Pick position is: " << worldPosition[0] << " " << worldPosition[1]
+//                      << " " << worldPosition[2] << endl;
+
+        vtkSmartPointer<vtkIdTypeArray> ids =
+                vtkSmartPointer<vtkIdTypeArray>::New();
+        ids->SetNumberOfComponents(1);
+        ids->InsertNextValue(picker->GetCellId());
+
+        vtkSmartPointer<vtkSelectionNode> selectionNode =
+                vtkSmartPointer<vtkSelectionNode>::New();
+        selectionNode->SetFieldType(vtkSelectionNode::CELL);
+        selectionNode->SetContentType(vtkSelectionNode::INDICES);
+        selectionNode->SetSelectionList(ids);
+
+        vtkSmartPointer<vtkSelection> selection =
+                vtkSmartPointer<vtkSelection>::New();
+        selection->AddNode(selectionNode);
+
+        vtkSmartPointer<vtkExtractSelection> extractSelection =
+                vtkSmartPointer<vtkExtractSelection>::New();
+        extractSelection->SetInputData(0, (vtkDataObject *) this->Data.GetPointer());
+        extractSelection->SetInputData(1, selection);
+        extractSelection->Update();
+
+        // In selection
+        vtkSmartPointer<vtkUnstructuredGrid> selected =
+                vtkSmartPointer<vtkUnstructuredGrid>::New();
+        selected->ShallowCopy(extractSelection->GetOutput());
+        cout << "selected" << endl;
+//            selected->Print(cout);
+
+        std::cout << "There are " << selected->GetNumberOfPoints()
+                  << " points in the selection." << std::endl;
+        vtkPoints *pPoints = selected->GetPoints();
+//            cout << "points scalar: " <<  endl;
+//            pPoints->Print(cout);
+
+        // 各点的属性
+        vtkPointData *pPointData = selected->GetPointData();
+        vtkDataArray *scalars = pPointData->GetScalars("ImageScalars");
+
+        for (int i = 0; i < selected->GetNumberOfPoints(); i++) {
+            std:
+            {
+                double *pDouble = pPoints->GetPoint(i);
+                cout << "point " << i << ": ";
+                for (int j = 0; j < 3; j++) {
+                    cout << " " << pDouble[j];
+                }
+                // 点的属性值
+                cout << " " << scalars->GetComponent(i, 0);
+                cout << endl;
+            }
+        }
+
+        // update temperature text
+        myRenderer->updateTemperatureTextWidget(myRenderer->scalarToTemperature(scalars->GetComponent(0, 0)));
+
+        std::cout << "There are " << selected->GetNumberOfCells()
+                  << " cells in the selection." << std::endl;
+
+        selectedMapper->SetInputData(selected);
+
+        selectedActor->SetMapper(selectedMapper);
+        selectedActor->GetProperty()->EdgeVisibilityOn();
+        selectedActor->GetProperty()->SetEdgeColor(1, 0, 0);
+        selectedActor->GetProperty()->SetLineWidth(0.5);
+
+        this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer()->AddActor(selectedActor);
+    }
+
+    // Forward events
+    vtkInteractorStyleTrackballCamera::OnRightButtonDown();
+}
+
+vtkStandardNewMacro(MouseInteractorStyle);
+
 
 int main() {
 
     string fileBaseDir = "/home/honhe/Downloads/volume_render/temperature_data/idw_penalty-result_20161024/";
-    MyRenderer *myRenderer = new MyRenderer();
+    myRenderer = new MyRenderer();
     myRenderer->init(fileBaseDir);
     myRenderer->addScalarBarWidget();
-    myRenderer->addTextWidget();
+    myRenderer->addFileNameTextWidget();
+    myRenderer->addTemperatureTextWidget();
     myRenderer->listTemperatureFiles();
     myRenderer->readFile(myRenderer->fileNames[0].string());
     myRenderer->prepareVolume();
