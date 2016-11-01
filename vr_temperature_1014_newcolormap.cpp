@@ -42,11 +42,136 @@
 #include <vtkOrientationMarkerWidget.h>
 #include <vtkTextRepresentation.h>
 #include <vtkTextWidget.h>
+#include <vtkInteractorStyleTrackballCamera.h>
+#include <vtkSelectionNode.h>
+#include <vtkSelection.h>
+#include <vtkExtractSelection.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkPointData.h>
+
 #include "./jet256colormap.h"
 
 
 using namespace std;
 using namespace boost::filesystem;
+
+// Catch mouse events
+class MouseInteractorStyle : public vtkInteractorStyleTrackballCamera {
+public:
+    static MouseInteractorStyle *New();
+
+    MouseInteractorStyle() {
+        selectedMapper = vtkSmartPointer<vtkDataSetMapper>::New();
+        selectedActor = vtkSmartPointer<vtkActor>::New();
+    }
+
+    virtual void OnRightButtonDown() {
+        // Get the location of the click (in window coordinates)
+        // 支持5个点目前
+        int *pos = this->GetInteractor()->GetEventPosition();
+
+        vtkSmartPointer<vtkVolumePicker> picker =
+                vtkSmartPointer<vtkVolumePicker>::New();
+        picker->PickClippingPlanesOn();
+        picker->SetPickClippingPlanes(100);
+        picker->GetPickClippingPlanes();
+        picker->SetTolerance(0.0005);
+        picker->SetVolumeOpacityIsovalue(0.001);    // threshold for select volume
+        // Pick from this location.
+        // 只有 x,y 没有 z,因为是平面
+        picker->Pick(pos[0], pos[1], 0, this->GetDefaultRenderer());
+
+        std::cout << "Pick pos is: " << pos[0] << " " << pos[1]
+                  << " " << endl;
+
+        double *worldPosition = picker->GetPickPosition();
+
+        std::cout << "World position is: " << worldPosition[0] << " " << worldPosition[1]
+                  << " " << worldPosition[2] << endl;
+
+        std::cout << "Cell id is: " << picker->GetCellId() << std::endl;
+
+        if (picker->GetCellId() != -1) {
+
+//            std::cout << "Pick position is: " << worldPosition[0] << " " << worldPosition[1]
+//                      << " " << worldPosition[2] << endl;
+
+            vtkSmartPointer<vtkIdTypeArray> ids =
+                    vtkSmartPointer<vtkIdTypeArray>::New();
+            ids->SetNumberOfComponents(1);
+            ids->InsertNextValue(picker->GetCellId());
+
+            vtkSmartPointer<vtkSelectionNode> selectionNode =
+                    vtkSmartPointer<vtkSelectionNode>::New();
+            selectionNode->SetFieldType(vtkSelectionNode::CELL);
+            selectionNode->SetContentType(vtkSelectionNode::INDICES);
+            selectionNode->SetSelectionList(ids);
+
+            vtkSmartPointer<vtkSelection> selection =
+                    vtkSmartPointer<vtkSelection>::New();
+            selection->AddNode(selectionNode);
+
+            vtkSmartPointer<vtkExtractSelection> extractSelection =
+                    vtkSmartPointer<vtkExtractSelection>::New();
+            extractSelection->SetInputData(0, (vtkDataObject *) this->Data.GetPointer());
+            extractSelection->SetInputData(1, selection);
+            extractSelection->Update();
+
+            // In selection
+            vtkSmartPointer<vtkUnstructuredGrid> selected =
+                    vtkSmartPointer<vtkUnstructuredGrid>::New();
+            selected->ShallowCopy(extractSelection->GetOutput());
+            cout << "selected" << endl;
+//            selected->Print(cout);
+
+            std::cout << "There are " << selected->GetNumberOfPoints()
+                      << " points in the selection." << std::endl;
+            vtkPoints *pPoints = selected->GetPoints();
+//            cout << "points scalar: " <<  endl;
+//            pPoints->Print(cout);
+
+            // 各点的属性
+            vtkPointData *pPointData = selected->GetPointData();
+            vtkDataArray *scalars = pPointData->GetScalars("ImageScalars");
+
+            for (int i = 0; i < selected->GetNumberOfPoints(); i++) {
+                std:
+                {
+                    double *pDouble = pPoints->GetPoint(i);
+                    cout << "point " << i << ": ";
+                    for (int j = 0; j < 3; j++) {
+                        cout << " " << pDouble[j];
+                    }
+                    // 点的属性值
+                    cout << " " << scalars->GetComponent(i, 0);
+                    cout << endl;
+                }
+            }
+
+            std::cout << "There are " << selected->GetNumberOfCells()
+                      << " cells in the selection." << std::endl;
+
+
+            selectedMapper->SetInputData(selected);
+
+            selectedActor->SetMapper(selectedMapper);
+            selectedActor->GetProperty()->EdgeVisibilityOn();
+            selectedActor->GetProperty()->SetEdgeColor(1, 0, 0);
+            selectedActor->GetProperty()->SetLineWidth(0.5);
+
+            this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer()->AddActor(selectedActor);
+        }
+
+        // Forward events
+        vtkInteractorStyleTrackballCamera::OnRightButtonDown();
+    }
+
+    vtkSmartPointer<vtkStructuredPoints> Data;
+    vtkSmartPointer<vtkDataSetMapper> selectedMapper;
+    vtkSmartPointer<vtkActor> selectedActor;
+};
+
+vtkStandardNewMacro(MouseInteractorStyle);
 
 class MyRenderer {
 public:
@@ -280,6 +405,7 @@ public:
 //        pCamera->SetPosition(data_axis_x * 3, data_axis_y * 3, -data_axis_z * 2);
         pCamera->SetPosition(0, 0, -200);
         double *position = pCamera->GetPosition();
+//        pCamera->SetClippingRange(20, 1000);  // 每次有事件导致Render后，会被重置。
         pCamera->Elevation(30);
         pCamera->Azimuth(-40);
     }
@@ -302,6 +428,15 @@ public:
 
     virtual ~MyRenderer() {
 
+    }
+
+    void addVolumePicker() {
+        // Set the custom stype to use for interaction.
+        vtkSmartPointer<MouseInteractorStyle> style =
+                vtkSmartPointer<MouseInteractorStyle>::New();
+        style->SetDefaultRenderer(renderer);
+        style->Data = imgData;
+        renderInteractor->SetInteractorStyle(style);
     }
 
 private:
@@ -345,5 +480,6 @@ int main() {
     myRenderer->addGrid();
     myRenderer->addOrientationMarkerWidget();
     myRenderer->setCamera();
+    myRenderer->addVolumePicker();
     myRenderer->render();
 }
