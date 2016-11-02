@@ -50,9 +50,13 @@
 #include <vtkPointData.h>
 #include <vtkCallbackCommand.h>
 #include <sstream>
+#include <vtkWindowToImageFilter.h>
+#include <vtkPNGWriter.h>
 
 #include "./jet256colormap.h"
-
+#include <boost/format.hpp>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 using namespace std;
 using namespace boost::filesystem;
@@ -105,8 +109,9 @@ public:
         rgbaLength = 4;
     }
 
-    void init(string fileBaseDir) {
+    void init(string fileBaseDir, string screenShotDir) {
         this->fileBaseDir = fileBaseDir;
+        this->screenShotDir = screenShotDir;
         vector<vector<double>> p((unsigned long) colorNumber, vector<double>(4));
         myLookTable = p;
         renderer->SetBackground(0.1, 0.1, 0.1);
@@ -120,7 +125,7 @@ public:
         imgData->AllocateScalars(VTK_UNSIGNED_CHAR, 1);
     }
 
-    void refreshRender(){
+    void refreshRender() {
 //        cout << "imgData GetMTime(): " << imgData->GetMTime()<< endl;
         renderWin->Render();
     }
@@ -128,6 +133,20 @@ public:
     void render() {
         renderWin->Render();
         renderInteractor->Start();
+    }
+
+    void screenShot(int number) {
+        const vtkSmartPointer<vtkWindowToImageFilter> &imageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
+        imageFilter->SetInput(renderWin);
+        imageFilter->SetInputBufferTypeToRGBA();
+        imageFilter->ReadFrontBufferOff();
+        imageFilter->Update();
+
+        const vtkSmartPointer<vtkPNGWriter> &pngWriter = vtkSmartPointer<vtkPNGWriter>::New();
+        string fileName = boost::str((boost::format("%04d") % number));
+        pngWriter->SetFileName((this->screenShotDir + "/" + fileName + ".png").c_str());
+        pngWriter->SetInputConnection(imageFilter->GetOutputPort());
+        pngWriter->Write();
     }
 
     void listTemperatureFiles() {
@@ -411,7 +430,7 @@ public:
     void setTimeEventObserver() {
         const vtkSmartPointer<vtkTimerCallback> &timerCallback = vtkSmartPointer<vtkTimerCallback>::New();
         renderInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);
-        int timerId = renderInteractor->CreateRepeatingTimer(70);
+        int timerId = renderInteractor->CreateRepeatingTimer(100);
         std::cout << "timerId: " << timerId << std::endl;
     }
 
@@ -436,6 +455,7 @@ private:
     vtkSmartPointer<vtkTextActor> temperatureTextActor;
     vtkSmartPointer<vtkTextWidget> temperatureTextWidget;
     vtkSmartPointer<vtkVolume> volume;
+    string screenShotDir;
 };
 
 // global variables
@@ -567,23 +587,41 @@ void vtkTimerCallback::Execute(vtkObject *caller, unsigned long eventId,
             static_cast<vtkRenderWindowInteractor *>(caller);
 
     if (vtkCommand::TimerEvent == eventId) {
-        cout << "TimerCount " << TimerCount << endl;
-        ++this->TimerCount;
+//        cout << "TimerCount " << TimerCount << endl;
+//        ++this->TimerCount;
     }
     if (myRenderer->volumeFileIndex >= myRenderer->fileNames.size() - 1) {
         return;
     }
     myRenderer->readFile(myRenderer->fileNames[myRenderer->volumeFileIndex].string());
     myRenderer->refreshRender();
+
+    // save screenshot
+    myRenderer->screenShot(myRenderer->volumeFileIndex);
+
     myRenderer->volumeFileIndex++;
 }
 
 
+string getDate() {
+    char text[16];
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    strftime(text, sizeof(text) - 1, "%Y%m%d_%H%M", t);
+    string str(text);
+    return str;
+}
+
 int main() {
 
     string fileBaseDir = "/home/honhe/Downloads/volume_render/temperature_data/idw_penalty-result_20161024/";
+    // make output dir
+    string screenShotDirBase = "/home/honhe/Downloads/volume_render/temperature_output/";
+    string screenShotDir = screenShotDirBase + "/" + getDate() + "/";
+    mkdir(screenShotDir.c_str(), 0744);
+    //
     myRenderer = new MyRenderer();
-    myRenderer->init(fileBaseDir);
+    myRenderer->init(fileBaseDir, screenShotDir);
     myRenderer->addScalarBarWidget();
     myRenderer->addFileNameTextWidget();
     myRenderer->addTemperatureTextWidget();
