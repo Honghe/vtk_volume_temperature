@@ -48,6 +48,7 @@
 #include <vtkExtractSelection.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkPointData.h>
+#include <vtkCallbackCommand.h>
 #include <sstream>
 
 #include "./jet256colormap.h"
@@ -69,11 +70,24 @@ public:
     vtkSmartPointer<vtkActor> selectedActor;
 };
 
+
+class vtkTimerCallback : public vtkCommand {
+public:
+    static vtkTimerCallback *New();
+
+    virtual void Execute(vtkObject *caller, unsigned long eventId,
+                         void *vtkNotUsed(callData));
+
+private:
+    int TimerCount;
+};
+
 class MyRenderer {
 public:
     vector<vector<double>> myLookTable;
     string fileBaseDir;
     vector<path> fileNames;
+    int volumeFileIndex = 0;
 
     MyRenderer() {
         data_axis_x = 80;
@@ -96,8 +110,19 @@ public:
         vector<vector<double>> p((unsigned long) colorNumber, vector<double>(4));
         myLookTable = p;
         renderer->SetBackground(0.1, 0.1, 0.1);
-        renderWin->SetSize(1000, 800);
+        renderWin->SetSize(800, 600);
         renderInteractor->Initialize();
+    }
+
+    void initVolumeDataMemory() {
+        imgData = vtkSmartPointer<vtkStructuredPoints>::New();
+        imgData->SetExtent(0, data_axis_x - 1, 0, data_axis_y - 1, 0, data_axis_z - 1);
+        imgData->AllocateScalars(VTK_UNSIGNED_CHAR, 1);
+    }
+
+    void refreshRender(){
+//        cout << "imgData GetMTime(): " << imgData->GetMTime()<< endl;
+        renderWin->Render();
     }
 
     void render() {
@@ -145,9 +170,6 @@ public:
                     temperatureNormalize(t);
         }
         fclose(f);
-        imgData = vtkSmartPointer<vtkStructuredPoints>::New();
-        imgData->SetExtent(0, data_axis_x - 1, 0, data_axis_y - 1, 0, data_axis_z - 1);
-        imgData->AllocateScalars(VTK_UNSIGNED_CHAR, 1);
         int *dims = imgData->GetDimensions();
 
         for (int k = 0; k < dims[2]; k++) {
@@ -158,6 +180,8 @@ public:
                 }
             }
         }
+        // update MTime for pipeline can refresh.
+        imgData->Modified();
     }
 
     void addScalarBarWidget() {
@@ -286,7 +310,7 @@ public:
         volumeMapper->SetSampleDistance(1);
         volumeMapper->SetImageSampleDistance(1);
         volumeMapper->AutoAdjustSampleDistancesOff();   // for better display when rotate
-        const vtkSmartPointer<vtkVolume> volume = vtkSmartPointer<vtkVolume>::New();
+        volume = vtkSmartPointer<vtkVolume>::New();
         volume->SetMapper(volumeMapper);
         volume->SetProperty(volumeProperty);
         renderer->AddVolume(volume);
@@ -294,9 +318,10 @@ public:
 
     void setCamera() {
         vtkCamera *pCamera = renderer->GetActiveCamera();
-        vtkVolumeCollection *pCollection = renderer->GetVolumes();
-        vtkVolume *pVolume = (vtkVolume *) pCollection->GetItemAsObject(0);
-        pCamera->SetFocalPoint(pVolume->GetCenter());
+//        vtkVolumeCollection *pCollection = renderer->GetVolumes();
+//        vtkVolume *pVolume = (vtkVolume *) pCollection->GetItemAsObject(0);
+//        pCamera->SetFocalPoint(pVolume->GetCenter());
+        pCamera->SetFocalPoint(data_axis_x / 2, data_axis_y / 2, data_axis_z / 2);
         pCamera->SetViewUp(0, 1, 0);
 //        pCamera->SetPosition(data_axis_x * 3, data_axis_y * 3, -data_axis_z * 2);
         pCamera->SetPosition(0, 0, -200);
@@ -345,7 +370,9 @@ public:
 
     void updateTemperatureTextWidget(string tmp) {
         string header = "TMP\n";
-        temperatureTextActor->SetInput(header.append(tmp + "℃").c_str());
+        if (temperatureTextActor != nullptr) {
+            temperatureTextActor->SetInput(header.append(tmp + "℃").c_str());
+        }
     }
 
     virtual ~MyRenderer() {
@@ -370,12 +397,22 @@ public:
     }
 
     string scalarToTemperature(int scalar) {
-        float tmp = (float)scalar / (colorNumber - 1) * (temperature_max - temperature_min) + temperature_min;
+        float tmp = (float) scalar / (colorNumber - 1) * (temperature_max - temperature_min) + temperature_min;
         // set precision
         stringstream stream;
         stream << fixed << setprecision(1) << tmp;
         string s = stream.str();
         return s;
+    }
+
+    /**
+     * auto read the next file
+     */
+    void setTimeEventObserver() {
+        const vtkSmartPointer<vtkTimerCallback> &timerCallback = vtkSmartPointer<vtkTimerCallback>::New();
+        renderInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);
+        int timerId = renderInteractor->CreateRepeatingTimer(70);
+        std::cout << "timerId: " << timerId << std::endl;
     }
 
 private:
@@ -398,10 +435,13 @@ private:
     vtkSmartPointer<vtkTextWidget> text_widget;
     vtkSmartPointer<vtkTextActor> temperatureTextActor;
     vtkSmartPointer<vtkTextWidget> temperatureTextWidget;
+    vtkSmartPointer<vtkVolume> volume;
 };
 
+// global variables
 MyRenderer *myRenderer;
 
+// MouseInteractorStyle
 // Catch mouse events
 MouseInteractorStyle::MouseInteractorStyle() {
     selectedMapper = vtkSmartPointer<vtkDataSetMapper>::New();
@@ -513,6 +553,31 @@ void MouseInteractorStyle::OnRightButtonDown() {
 
 vtkStandardNewMacro(MouseInteractorStyle);
 
+// vtkTimerCallback
+//
+vtkTimerCallback *vtkTimerCallback::New() {
+    vtkTimerCallback *cb = new vtkTimerCallback;
+    cb->TimerCount = 0;
+    return cb;
+}
+
+void vtkTimerCallback::Execute(vtkObject *caller, unsigned long eventId,
+                               void *vtkNotUsed(callData)) {
+    vtkRenderWindowInteractor *iren =
+            static_cast<vtkRenderWindowInteractor *>(caller);
+
+    if (vtkCommand::TimerEvent == eventId) {
+        cout << "TimerCount " << TimerCount << endl;
+        ++this->TimerCount;
+    }
+    if (myRenderer->volumeFileIndex >= myRenderer->fileNames.size() - 1) {
+        return;
+    }
+    myRenderer->readFile(myRenderer->fileNames[myRenderer->volumeFileIndex].string());
+    myRenderer->refreshRender();
+    myRenderer->volumeFileIndex++;
+}
+
 
 int main() {
 
@@ -523,11 +588,13 @@ int main() {
     myRenderer->addFileNameTextWidget();
     myRenderer->addTemperatureTextWidget();
     myRenderer->listTemperatureFiles();
-    myRenderer->readFile(myRenderer->fileNames[0].string());
-    myRenderer->prepareVolume();
-    myRenderer->addGrid();
     myRenderer->addOrientationMarkerWidget();
     myRenderer->setCamera();
+    myRenderer->initVolumeDataMemory();
+    myRenderer->readFile(myRenderer->fileNames[0].string());
+    myRenderer->prepareVolume();
     myRenderer->addVolumePicker();
+    myRenderer->addGrid();
+    myRenderer->setTimeEventObserver();
     myRenderer->render();
 }
