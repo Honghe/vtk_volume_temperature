@@ -57,6 +57,7 @@
 #include <boost/format.hpp>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "boost/multi_array.hpp"
 
 using namespace std;
 using namespace boost::filesystem;
@@ -164,9 +165,9 @@ public:
     }
 
     void readFile(string fileName) {
-        cout << "read file " << fileName << endl;
+        string subName = fileName.substr(fileName.length() - 23, 19);
+        cout << "read file " << subName << endl;
 
-        string subName = fileName.substr(fileName.length() - 24, 20);
         text_actor->SetInput(subName.c_str());
 
         FILE *f = fopen(fileName.c_str(), "r");
@@ -178,24 +179,34 @@ public:
         //
         float x, y, z, t;
         int volume_size = data_axis_x * data_axis_y * data_axis_z;
-        vector<vector<vector<int>>> xyzs((unsigned long) data_axis_x,
-                                         vector<vector<int>>((unsigned long) data_axis_z,
-                                                             vector<int>((unsigned long) data_axis_y)));
+
+        typedef boost::multi_array<float, 3> array_type;
+        typedef array_type::index index;
+        typedef boost::array<index, 3> tIndexArray;
+        tIndexArray idx;
+
+        boost::multi_array<float, 3> xyzs(boost::extents[data_axis_x][data_axis_z][data_axis_y]);
 
         for (int i = 0; i < volume_size; ++i) {
             fscanf(f, "%f %f %f %f", &x, &z, &y, &t);
 //            printf("%d %f %f %f %f\n", i, x, z, y, t);
-            xyzs[positionNormalize(x)][positionNormalize(z)][positionNormalize(y)] =
-                    temperatureNormalize(t);
+            int reverse_x_index = data_axis_x - 1 - positionNormalize(x);
+            idx = {{reverse_x_index, positionNormalize(z), positionNormalize(y)}};
+            xyzs(idx) = t;
         }
         fclose(f);
-        int *dims = imgData->GetDimensions();
 
+        float *originMax = std::max_element(xyzs.origin(), xyzs.origin() + xyzs.num_elements());
+        float *originMin = std::min_element(xyzs.origin(), xyzs.origin() + xyzs.num_elements());
+        cout << "origin max min " << originMax[0] << " " << originMin[0] << endl;
+
+        int *dims = imgData->GetDimensions();
         for (int k = 0; k < dims[2]; k++) {
             for (int j = 0; j < dims[1]; j++) {
                 for (int i = 0; i < dims[0]; i++) {
                     unsigned char *pixel = static_cast<unsigned char *>(imgData->GetScalarPointer(i, j, k));
-                    pixel[0] = (unsigned char) xyzs[i][k][j];
+                    idx = {{i, k, j}};
+                    pixel[0] = (unsigned char) temperatureNormalize(xyzs(idx));
                 }
             }
         }
@@ -411,8 +422,16 @@ public:
         return (scalar - 5) / 10;
     }
 
+    /**
+     * 规一化
+     * 若超过边界，则置相应边界值，截断
+     * @param t
+     * @return
+     */
     int temperatureNormalize(float t) {
-        return (t - temperature_min) / (temperature_max - temperature_min) * colorNumber - 2 + 1;
+        t = t > temperature_max ? temperature_max : t;
+        t = t < temperature_min ? temperature_min : t;
+        return (t - temperature_min) / (temperature_max - temperature_min) * (colorNumber - 1);
     }
 
     string scalarToTemperature(int scalar) {
@@ -613,8 +632,7 @@ string getDate() {
 }
 
 int main() {
-
-    string fileBaseDir = "/home/honhe/Downloads/volume_render/temperature_data/idw_penalty-result_20161024/";
+    string fileBaseDir = "/home/honhe/Downloads/volume_render/temperature_data/2016-11-02";
     // make output dir
     string screenShotDirBase = "/home/honhe/Downloads/volume_render/temperature_output/";
     string screenShotDir = screenShotDirBase + "/" + getDate() + "/";
@@ -629,10 +647,10 @@ int main() {
     myRenderer->addOrientationMarkerWidget();
     myRenderer->setCamera();
     myRenderer->initVolumeDataMemory();
-    myRenderer->readFile(myRenderer->fileNames[0].string());
+    myRenderer->readFile(myRenderer->fileNames[171].string());
     myRenderer->prepareVolume();
     myRenderer->addVolumePicker();
     myRenderer->addGrid();
-    myRenderer->setTimeEventObserver();
+//    myRenderer->setTimeEventObserver();
     myRenderer->render();
 }
