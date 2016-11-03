@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 find_package(VTK REQUIRED
         )
 find_package(Boost REQUIRED
-        COMPONENTS  system filesystem
+        COMPONENTS system filesystem
 
         )
 include(${VTK_USE_FILE})
@@ -15,16 +15,19 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR})
 
 set(SOURCE_FILES
-        vr_temperature_1014.cpp
-        vr_temperature_1014_by_ruilang.cpp
-        vr_temperature_1014_newcolormap.cpp)
+        vr_temperature_1103.cpp
+        tps/TpsRenderer.cpp
+        fps/FpsRenderer.cpp
+        fps/MouseInteractorStyle.cpp
+        fps/TimerCallback.cpp
+        jet256colormap.cpp
+        MyDirector.cpp)
 
-foreach(name ${SOURCE_FILES})
-    add_executable(${name}  ${name} )
-    target_link_libraries(${name} ${VTK_LIBRARIES})
-    target_link_libraries(${name} ${Boost_LIBRARIES})
-
-endforeach()
+set(name "vr_temperature_1103")
+add_executable(${name}
+        ${SOURCE_FILES})
+target_link_libraries(${name} ${VTK_LIBRARIES})
+target_link_libraries(${name} ${Boost_LIBRARIES})
 
 
 
