@@ -94,14 +94,15 @@ public:
     vector<path> fileNames;
     int volumeFileIndex = 0;
 
-    MyRenderer() {
+    MyRenderer(vtkSmartPointer<vtkRenderWindow> renderWin) {
         data_axis_x = 80;
         data_axis_z = 99;
         data_axis_y = 36;
         temperature_min = 18;
         temperature_max = 30;
+        this->renderWin = renderWin;
         renderer = vtkSmartPointer<vtkRenderer>::New();
-        renderWin = vtkSmartPointer<vtkRenderWindow>::New();
+        renderer->SetViewport(0, 0, 0.5, 1);
         renderWin->AddRenderer(renderer);
         renderInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
         renderInteractor->SetRenderWindow(renderWin);
@@ -479,6 +480,7 @@ private:
 
 // global variables
 MyRenderer *myRenderer;
+vtkSmartPointer<vtkRenderWindow> renderWin;
 
 // MouseInteractorStyle
 // Catch mouse events
@@ -632,13 +634,14 @@ string getDate() {
 }
 
 int main() {
+    renderWin = vtkSmartPointer<vtkRenderWindow>::New();
     string fileBaseDir = "/home/honhe/Downloads/volume_render/temperature_data/2016-11-02";
     // make output dir
     string screenShotDirBase = "/home/honhe/Downloads/volume_render/temperature_output/";
     string screenShotDir = screenShotDirBase + "/" + getDate() + "/";
-    mkdir(screenShotDir.c_str(), 0744);
+    bool batch = false;
     //
-    myRenderer = new MyRenderer();
+    myRenderer = new MyRenderer(renderWin);
     myRenderer->init(fileBaseDir, screenShotDir);
     myRenderer->addScalarBarWidget();
     myRenderer->addFileNameTextWidget();
@@ -651,6 +654,11 @@ int main() {
     myRenderer->prepareVolume();
     myRenderer->addVolumePicker();
     myRenderer->addGrid();
-//    myRenderer->setTimeEventObserver();
+    //
+//    batch = true;
+    if (batch) {
+        mkdir(screenShotDir.c_str(), 0744);
+        myRenderer->setTimeEventObserver();
+    }
     myRenderer->render();
 }
