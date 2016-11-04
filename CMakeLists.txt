@@ -22,6 +22,7 @@ set(SOURCE_FILES
         fps/BasePsRenderer.cpp
         fps/TimerCallback.cpp
         jet256colormap.cpp
+        fps/CameraEventCallback.cpp
         MyDirector.cpp
         )
 

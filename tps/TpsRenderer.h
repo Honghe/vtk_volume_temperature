@@ -32,6 +32,12 @@ public:
     void initVolumeDataMemory();
 
     void setCamera();
+
+    void updateTpsCamera();
+
+    void addFpsCameraPoly();
+
+    vtkSmartPointer<vtkActor> fpsCameraActor;
 };
 
 

@@ -137,6 +137,7 @@ public:
     vtkIdType colorNumber;
     int rgbaLength;
     vtkSmartPointer<vtkStructuredPoints> imgData;
+    MyDirector *myDirector;
 
 protected:
     vtkSmartPointer<vtkRenderWindow> renderWin;
@@ -150,7 +151,6 @@ protected:
     vtkSmartPointer<vtkTextWidget> temperatureTextWidget;
     vtkSmartPointer<vtkVolume> volume;
     std::string screenShotDir;
-    MyDirector *myDirector;
 };
 
 

@@ -48,6 +48,8 @@ public:
     void fpsRendererAddScalarBarWidget();
 
     void fpsRendererSetCamera();
+
+    void fpsRendererCameraUpdateEvent();
 };
 
 #endif //DEMO_VTK_TUTORIAL_MYDIRECTOR_H

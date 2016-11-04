@@ -131,6 +131,8 @@ public:
      * auto read the next file
      */
     void setTimeEventObserver();
+
+    void addCameraEventCallback();
 };
 
 

@@ -5,6 +5,7 @@
 #include <boost/multi_array.hpp>
 #include "FpsRenderer.h"
 #include "TimerCallback.h"
+#include "CameraEventCallback.h"
 #include <MyDirector.h>
 
 using namespace boost::filesystem;
@@ -231,4 +232,10 @@ int FpsRenderer::positionNormalize(float scalar) {
 void FpsRenderer::addOrientationMarkerWidget() {
     BasePsRenderer::addOrientationMarkerWidget();
     myDirector->fpsRendererAddOrientationMarkerWidget();
+}
+
+void FpsRenderer::addCameraEventCallback() {
+    const vtkSmartPointer<CameraEventCallback> &callback = vtkSmartPointer<CameraEventCallback>::New();
+    callback->init(this);
+    renderer->AddObserver(vtkCommand::StartEvent, callback);
 }

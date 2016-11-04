@@ -5,6 +5,7 @@
 #include <vtkSphereSource.h>
 #include <vtkPolyDataMapper.h>
 #include "TpsRenderer.h"
+#include <vtkConeSource.h>
 
 TpsRenderer::TpsRenderer(vtkSmartPointer<vtkRenderWindow> renderWin,
                          vtkSmartPointer<vtkRenderWindowInteractor> renderInteractor, MyDirector *myDirector)
@@ -40,10 +41,37 @@ void TpsRenderer::setCamera() {
     pCamera->SetFocalPoint(data_axis_x / 2, data_axis_y / 2, data_axis_z / 2);
     pCamera->SetViewUp(0, 1, 0);
 //        pCamera->SetPosition(data_axis_x * 3, data_axis_y * 3, -data_axis_z * 2);
-    pCamera->SetPosition(0, 0, -250);
+    pCamera->SetPosition(0, 0, -350);
     double *position = pCamera->GetPosition();
 //        pCamera->SetClippingRange(20, 1000);  // 每次有事件导致Render后，会被重置。
     pCamera->Elevation(30);
     pCamera->Azimuth(-110);
+    //
+    addFpsCameraPoly();
+}
+
+void TpsRenderer::addFpsCameraPoly() {
+    vtkSmartPointer<vtkConeSource> coneSource =
+            vtkSmartPointer<vtkConeSource>::New();
+    coneSource->SetRadius(6);
+    coneSource->SetHeight(10);
+    coneSource->Update();
+
+    vtkSmartPointer<vtkPolyData> cone = coneSource->GetOutput();
+
+    vtkSmartPointer<vtkPolyDataMapper> mapper =
+            vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputData(cone);
+
+    fpsCameraActor = vtkSmartPointer<vtkActor>::New();
+    fpsCameraActor->SetMapper(mapper);
+
+    renderer->AddActor(fpsCameraActor);
+    fpsCameraActor->SetPosition(fpsRenderer->renderer->GetActiveCamera()->GetPosition());
+}
+
+void TpsRenderer::updateTpsCamera() {
+    vtkCamera *pCamera = fpsRenderer->renderer->GetActiveCamera();
+    fpsCameraActor->SetPosition(fpsRenderer->renderer->GetActiveCamera()->GetPosition());
 }
 

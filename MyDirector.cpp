@@ -35,8 +35,9 @@ void MyDirector::init() {
     fpsRenderer->addTemperatureTextWidget();
     fpsRenderer->listTemperatureFiles();
     fpsRenderer->addOrientationMarkerWidget();
-    fpsRenderer->setCamera();
+    fpsRenderer->addCameraEventCallback();
     fpsRenderer->initVolumeDataMemory();
+    fpsRenderer->setCamera();
     fpsRenderer->addGrid();
     fpsRenderer->prepareVolume();
     fpsRenderer->addVolumePicker();
@@ -93,4 +94,8 @@ void MyDirector::fpsRendererAddScalarBarWidget() {
 
 void MyDirector::fpsRendererSetCamera() {
     tpsRenderer->setCamera();
+}
+
+void MyDirector::fpsRendererCameraUpdateEvent() {
+    tpsRenderer->updateTpsCamera();
 }
