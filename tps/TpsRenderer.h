@@ -9,34 +9,29 @@
 #include <vtkRenderer.h>
 #include <vtkSmartPointer.h>
 #include <vtkRenderWindow.h>
+#include <fps/BasePsRenderer.h>
 #include <fps/FpsRenderer.h>
 
 /**
  * TPS Render
  */
-class TpsRenderer {
+class TpsRenderer : public BasePsRenderer{
 public:
     TpsRenderer(vtkSmartPointer<vtkRenderWindow> renderWin, vtkSmartPointer<vtkRenderWindowInteractor> renderInteractor,
                     MyDirector *myDirector);
 
-    vtkSmartPointer<vtkRenderer> renderer;
-
     TpsRenderer(vtkSmartPointer<vtkRenderWindow>);
-    void setViewPort(double *_args);
 
-    void update(FpsRenderer *);
+    void init(FpsRenderer *fpsRenderer);
 
-    void init(FpsRenderer *pRenderer);
-    void prepareVolume(FpsRenderer *fpsRenderer);
-    void addGrid(FpsRenderer *fpsRenderer);
+    void updateImgData();
 
-private:
-    vtkSmartPointer<vtkRenderWindow> renderWin;
-    MyDirector *myDirector;
-    vtkSmartPointer<vtkRenderWindowInteractor> renderInteractor;
-    vtkSmartPointer<vtkOpenGLGPUVolumeRayCastMapper> volumeMapper;
-    vtkSmartPointer<vtkVolume> volume;
+    void prepareVolume();
+    FpsRenderer *fpsRenderer;
 
+    void initVolumeDataMemory();
+
+    void setCamera();
 };
 
 

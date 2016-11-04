@@ -19,9 +19,11 @@ set(SOURCE_FILES
         tps/TpsRenderer.cpp
         fps/FpsRenderer.cpp
         fps/MouseInteractorStyle.cpp
+        fps/BasePsRenderer.cpp
         fps/TimerCallback.cpp
         jet256colormap.cpp
-        MyDirector.cpp)
+        MyDirector.cpp
+        )
 
 set(name "vr_temperature_1103")
 add_executable(${name}

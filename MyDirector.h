@@ -28,18 +28,26 @@ public:
         return str;
     }
 
-    void fpsRenderUpdateTpsRenderer(FpsRenderer *);
+    void fpsRenderUpdate();
 
-    void fpsRendererInitTps(FpsRenderer *);
-    void fpsRendererPrepareVolume(FpsRenderer *fpsRenderer);
-    void fpsRendereraddGrid(FpsRenderer *fpsRenderer);
+    void fpsRendererInit(FpsRenderer *);
+    void fpsRendererPrepareVolume();
+    void fpsRendererAddGrid();
+    void fpsRendererReadFile();
 
-private:
+    void fpsRendererAddOrientationMarkerWidget();
+
+    void fpsRendererInitVolumeDataMemory();
+    void fpsRendererRender();
+
     vtkSmartPointer<vtkRenderWindow> renderWin;
     vtkSmartPointer<vtkRenderWindowInteractor> renderInteractor;
     FpsRenderer *fpsRenderer;
     TpsRenderer *tpsRenderer;
 
+    void fpsRendererAddScalarBarWidget();
+
+    void fpsRendererSetCamera();
 };
 
 #endif //DEMO_VTK_TUTORIAL_MYDIRECTOR_H

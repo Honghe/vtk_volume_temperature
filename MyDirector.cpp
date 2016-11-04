@@ -37,10 +37,10 @@ void MyDirector::init() {
     fpsRenderer->addOrientationMarkerWidget();
     fpsRenderer->setCamera();
     fpsRenderer->initVolumeDataMemory();
-    fpsRenderer->readFile(fpsRenderer->fileNames[0].string());
+    fpsRenderer->addGrid();
     fpsRenderer->prepareVolume();
     fpsRenderer->addVolumePicker();
-    fpsRenderer->addGrid();
+    fpsRenderer->readFile(fpsRenderer->fileNames[0].string());
 
     //
 //    batch = true;
@@ -56,18 +56,41 @@ void MyDirector::startInteractor() {
     renderInteractor->Start();
 }
 
-void MyDirector::fpsRenderUpdateTpsRenderer(FpsRenderer *fpsRenderer) {
-    tpsRenderer->update(fpsRenderer);
+void MyDirector::fpsRenderUpdate() {
 }
 
-void MyDirector::fpsRendererInitTps(FpsRenderer *fpsRenderer) {
+void MyDirector::fpsRendererInit(FpsRenderer *fpsRenderer) {
     tpsRenderer->init(fpsRenderer);
 }
 
-void MyDirector::fpsRendererPrepareVolume(FpsRenderer *fpsRenderer) {
-    tpsRenderer->prepareVolume(fpsRenderer);
+void MyDirector::fpsRendererPrepareVolume() {
+    tpsRenderer->prepareVolume();
 }
 
-void MyDirector::fpsRendereraddGrid(FpsRenderer *fpsRenderer) {
-    tpsRenderer->addGrid(fpsRenderer);
+void MyDirector::fpsRendererAddGrid() {
+    tpsRenderer->addGrid();
+}
+
+void MyDirector::fpsRendererReadFile() {
+    tpsRenderer->updateImgData();
+}
+
+void MyDirector::fpsRendererRender() {
+    tpsRenderer->render();
+}
+
+void MyDirector::fpsRendererAddOrientationMarkerWidget() {
+    tpsRenderer->addOrientationMarkerWidget();
+}
+
+void MyDirector::fpsRendererInitVolumeDataMemory() {
+    tpsRenderer->initVolumeDataMemory();
+}
+
+void MyDirector::fpsRendererAddScalarBarWidget() {
+    tpsRenderer->addScalarBarWidget();
+}
+
+void MyDirector::fpsRendererSetCamera() {
+    tpsRenderer->setCamera();
 }

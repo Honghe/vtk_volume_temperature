@@ -7,98 +7,43 @@
 #include "TpsRenderer.h"
 
 TpsRenderer::TpsRenderer(vtkSmartPointer<vtkRenderWindow> renderWin,
-                         vtkSmartPointer<vtkRenderWindowInteractor> renderInteractor, MyDirector *myDirector) {
-    this->renderWin = renderWin;
-    this->myDirector = myDirector;
-    this->renderInteractor = renderInteractor;
-    renderer = vtkSmartPointer<vtkRenderer>::New();
-    renderWin->AddRenderer(renderer);
-    renderer->SetBackground(0.1, 0.1, 0.1);
-    volumeMapper = vtkSmartPointer<vtkOpenGLGPUVolumeRayCastMapper>::New();
-}
-
-void TpsRenderer::setViewPort(double *_args) {
-    renderer->SetViewport(_args);
-}
-
-void TpsRenderer::update(FpsRenderer *fpsRenderer) {
-
+                         vtkSmartPointer<vtkRenderWindowInteractor> renderInteractor, MyDirector *myDirector)
+        : BasePsRenderer(renderWin, renderInteractor, myDirector) {
 }
 
 void TpsRenderer::init(FpsRenderer *fpsRenderer) {
-    this->prepareVolume(fpsRenderer);
+    this->fpsRenderer = fpsRenderer;
+    myLookTable = fpsRenderer->myLookTable;
+    colorNumber = fpsRenderer->colorNumber;
+    rgbaLength = fpsRenderer->rgbaLength;
+    data_axis_x = fpsRenderer->data_axis_x;
+    data_axis_z = fpsRenderer->data_axis_z;
+    data_axis_y = fpsRenderer->data_axis_y;
+    temperature_min = fpsRenderer->temperature_min;
+    temperature_max = fpsRenderer->temperature_max;
 }
 
-void TpsRenderer::addGrid(FpsRenderer *fpsRenderer) {
-    float padding = 0.5;
-    const vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-    for (float k : vector<float>{0 + padding, fpsRenderer->data_axis_z -1- padding}) {
-        for (float j : vector<float>{0 + padding, fpsRenderer->data_axis_y-1 - padding}) {
-            for (float i  : vector<float>{0 + padding, fpsRenderer->data_axis_x -1 - padding}) {
-                points->InsertNextPoint(i, j, k);
-            }
-        }
-    }
-
-    const vtkSmartPointer<vtkCellArray> &lines = vtkSmartPointer<vtkCellArray>::New();
-    for (int i: vector<int>{0, 4}) {
-        vtkLine *line = vtkLine::New();
-        line->GetPointIds()->SetId(0, 0 + i);
-        line->GetPointIds()->SetId(1, 1 + i);
-        lines->InsertNextCell(line);
-
-        line = vtkLine::New();
-        line->GetPointIds()->SetId(0, 2 + i);
-        line->GetPointIds()->SetId(1, 3 + i);
-        lines->InsertNextCell(line);
-
-        line = vtkLine::New();
-        line->GetPointIds()->SetId(0, 0 + i);
-        line->GetPointIds()->SetId(1, 2 + i);
-        lines->InsertNextCell(line);
-
-        line = vtkLine::New();
-        line->GetPointIds()->SetId(0, 1 + i);
-        line->GetPointIds()->SetId(1, 3 + i);
-        lines->InsertNextCell(line);
-    }
-
-    for (int l = 0; l < 4; ++l) {
-        vtkLine *line = vtkLine::New();
-        line->GetPointIds()->SetId(0, l);
-        line->GetPointIds()->SetId(1, 4 + l);
-        lines->InsertNextCell(line);
-    }
-    const vtkSmartPointer<vtkPolyData> &polyData = vtkSmartPointer<vtkPolyData>::New();
-    polyData->SetPoints(points);
-    polyData->SetLines(lines);
-    const vtkSmartPointer<vtkDataSetMapper> &mapper = vtkSmartPointer<vtkDataSetMapper>::New();
-    mapper->SetInputData(polyData);
-    const vtkSmartPointer<vtkActor> &actor = vtkSmartPointer<vtkActor>::New();
-    actor->SetMapper(mapper);
-    renderer->AddActor(actor);
+void TpsRenderer::initVolumeDataMemory() {
+    this->imgData = fpsRenderer->imgData;
 }
 
-void TpsRenderer::prepareVolume(FpsRenderer *fpsRenderer) {
-    const vtkSmartPointer<vtkColorTransferFunction> colorTransferFunction = vtkSmartPointer<vtkColorTransferFunction>::New();
-    for (int i = 2; i < fpsRenderer->colorNumber; ++i) {
-        vector<double> &rgba = fpsRenderer->myLookTable[i];
-        colorTransferFunction->AddRGBPoint(i, rgba[0], rgba[1], rgba[2]);
-    }
-    const vtkSmartPointer<vtkPiecewiseFunction> alphaChannelFunction = vtkSmartPointer<vtkPiecewiseFunction>::New();
-    alphaChannelFunction->AddPoint(0, 0.00);
-    alphaChannelFunction->AddPoint(0, 0.03);
-    alphaChannelFunction->AddPoint(255, 0.03);
-
-    const vtkSmartPointer<vtkVolumeProperty> volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();
-    volumeProperty->SetColor(colorTransferFunction);
-    volumeProperty->SetScalarOpacity(alphaChannelFunction);
-    volumeMapper->SetInputData(fpsRenderer->imgData);
-    volumeMapper->SetSampleDistance(1);
-    volumeMapper->SetImageSampleDistance(1);
-    volumeMapper->AutoAdjustSampleDistancesOff();   // for better display when rotate
-    volume = vtkSmartPointer<vtkVolume>::New();
-    volume->SetMapper(volumeMapper);
-    volume->SetProperty(volumeProperty);
-    renderer->AddVolume(volume);
+void TpsRenderer::updateImgData() {
+    this->imgData = fpsRenderer->imgData;
 }
+
+void TpsRenderer::prepareVolume() {
+    BasePsRenderer::prepareVolume();
+}
+
+void TpsRenderer::setCamera() {
+    vtkCamera *pCamera = renderer->GetActiveCamera();
+    pCamera->SetFocalPoint(data_axis_x / 2, data_axis_y / 2, data_axis_z / 2);
+    pCamera->SetViewUp(0, 1, 0);
+//        pCamera->SetPosition(data_axis_x * 3, data_axis_y * 3, -data_axis_z * 2);
+    pCamera->SetPosition(0, 0, -250);
+    double *position = pCamera->GetPosition();
+//        pCamera->SetClippingRange(20, 1000);  // 每次有事件导致Render后，会被重置。
+    pCamera->Elevation(30);
+    pCamera->Azimuth(-110);
+}
+

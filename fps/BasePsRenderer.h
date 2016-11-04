@@ -2,8 +2,8 @@
 // Created by honhe on 11/3/16.
 //
 
-#ifndef DEMO_VTK_TUTORIAL_FPSRENDERER_H
-#define DEMO_VTK_TUTORIAL_FPSRENDERER_H
+#ifndef DEMO_VTK_TUTORIAL_BASEPSRENDERER_H
+#define DEMO_VTK_TUTORIAL_BASEPSRENDERER_H
 
 #include <vtkStructuredPointsReader.h>
 #include <vtkVolumeRayCastCompositeFunction.h>
@@ -55,10 +55,8 @@
 #include <vtkWindowToImageFilter.h>
 #include <vtkPNGWriter.h>
 
-#include "./jet256colormap.h"
+#include "../jet256colormap.h"
 #include "MouseInteractorStyle.h"
-#include "BasePsRenderer.h"
-#include "BasePsRenderer.h"
 #include <boost/format.hpp>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -72,12 +70,21 @@ class MyDirector;
 /**
  * FPS Render
  */
-class FpsRenderer :public BasePsRenderer{
+class BasePsRenderer {
 public:
 
-    FpsRenderer(vtkSmartPointer<vtkRenderWindow> pointer, vtkSmartPointer<vtkRenderWindowInteractor> smartPointer,
-                MyDirector *pDirector);
-    FpsRenderer();
+    BasePsRenderer(vtkSmartPointer<vtkRenderWindow> pointer, vtkSmartPointer<vtkRenderWindowInteractor> smartPointer,
+                   MyDirector *pDirector);
+
+    vector<vector<double>> myLookTable;
+    std::string fileBaseDir;
+    vector<path> fileNames;
+    int volumeFileIndex = 0;
+    vtkSmartPointer<vtkRenderer> renderer;
+
+    BasePsRenderer();
+
+    void setViewPort(double *_args);
 
     void init(std::string fileBaseDir, std::string screenShotDir);
 
@@ -97,9 +104,9 @@ public:
 
     void addGrid();
 
-    void prepareVolume();
+    void addOrientationMarkerWidget();
 
-    void setCamera();
+    void prepareVolume();
 
     void addFileNameTextWidget();
 
@@ -107,13 +114,8 @@ public:
 
     void updateTemperatureTextWidget(std::string tmp);
 
-    void addOrientationMarkerWidget();
-
-    virtual ~FpsRenderer() {
-
+    virtual ~BasePsRenderer() {
     }
-
-    void addVolumePicker();
 
     int positionNormalize(float scalar);
 
@@ -127,11 +129,29 @@ public:
 
     std::string scalarToTemperature(int scalar);
 
-    /**
-     * auto read the next file
-     */
-    void setTimeEventObserver();
+    float temperature_max;
+    int data_axis_x;
+    int data_axis_z;
+    int data_axis_y;
+    float temperature_min;
+    vtkIdType colorNumber;
+    int rgbaLength;
+    vtkSmartPointer<vtkStructuredPoints> imgData;
+
+protected:
+    vtkSmartPointer<vtkRenderWindow> renderWin;
+    vtkSmartPointer<vtkRenderWindowInteractor> renderInteractor;
+    vtkSmartPointer<vtkOpenGLGPUVolumeRayCastMapper> volumeMapper;
+    vtkSmartPointer<vtkOrientationMarkerWidget> orientationMarkerWidget;
+    vtkSmartPointer<vtkScalarBarWidget> scalarBarWidget;
+    vtkSmartPointer<vtkTextActor> text_actor;
+    vtkSmartPointer<vtkTextWidget> text_widget;
+    vtkSmartPointer<vtkTextActor> temperatureTextActor;
+    vtkSmartPointer<vtkTextWidget> temperatureTextWidget;
+    vtkSmartPointer<vtkVolume> volume;
+    std::string screenShotDir;
+    MyDirector *myDirector;
 };
 
 
-#endif //DEMO_VTK_TUTORIAL_FPSRENDERER_H
+#endif //DEMO_VTK_TUTORIAL_BASEPSRENDERER_H
