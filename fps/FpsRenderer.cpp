@@ -20,6 +20,8 @@ FpsRenderer::FpsRenderer(vtkSmartPointer<vtkRenderWindow> renderWin,
     data_axis_y = 36;
     temperature_min = 18;
     temperature_max = 30;
+//    temperature_min = 20;
+//    temperature_max = 30.5;
     this->renderWin = renderWin;
     this->myDirector = myDirector;
     renderer = vtkSmartPointer<vtkRenderer>::New();
@@ -174,9 +176,9 @@ void FpsRenderer::addScalarBarWidget() {
 void FpsRenderer::addGrid() {
     float padding = 0.5;
     const vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-    for (int k : vector<int>{0 + padding, data_axis_z - padding}) {
-        for (int j : vector<int>{0 + padding, data_axis_y - padding}) {
-            for (int i  : vector<int>{0 + padding, data_axis_x - padding}) {
+    for (float k : vector<float>{0 + padding, data_axis_z - 1 - padding}) {
+        for (float j : vector<float>{0 + padding, data_axis_y -1 - padding}) {
+            for (float i  : vector<float>{0 + padding, data_axis_x - 1 - padding}) {
                 points->InsertNextPoint(i, j, k);
             }
         }

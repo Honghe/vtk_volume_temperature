@@ -25,10 +25,10 @@ void MyDirector::init() {
     fpsRenderer = new FpsRenderer(renderWin, renderInteractor, this);
     fpsRenderer->setViewPort(leftViewport);
     // TpsRenderer
-////    // set after fpsRender
+    // set after fpsRender
     tpsRenderer = new TpsRenderer(renderWin, renderInteractor, this);
     tpsRenderer->setViewPort(rightViewport);
-    //
+    //*
     fpsRenderer->init(fileBaseDir, screenShotDir);
     fpsRenderer->addScalarBarWidget();
     fpsRenderer->addFileNameTextWidget();
@@ -37,7 +37,7 @@ void MyDirector::init() {
     fpsRenderer->addOrientationMarkerWidget();
     fpsRenderer->setCamera();
     fpsRenderer->initVolumeDataMemory();
-    fpsRenderer->readFile(fpsRenderer->fileNames[171].string());
+    fpsRenderer->readFile(fpsRenderer->fileNames[0].string());
     fpsRenderer->prepareVolume();
     fpsRenderer->addVolumePicker();
     fpsRenderer->addGrid();
@@ -48,7 +48,6 @@ void MyDirector::init() {
         mkdir(screenShotDir.c_str(), 0744);
         fpsRenderer->setTimeEventObserver();
     }
-
 }
 
 void MyDirector::startInteractor() {

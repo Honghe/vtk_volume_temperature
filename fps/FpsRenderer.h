@@ -139,11 +139,11 @@ public:
      */
     void setTimeEventObserver();
 
-    int temperature_max;
+    float temperature_max;
     int data_axis_x;
     int data_axis_z;
     int data_axis_y;
-    int temperature_min;
+    float temperature_min;
     vtkIdType colorNumber;
     int rgbaLength;
     vtkSmartPointer<vtkStructuredPoints> imgData;

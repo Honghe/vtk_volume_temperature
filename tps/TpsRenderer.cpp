@@ -32,9 +32,9 @@ void TpsRenderer::init(FpsRenderer *fpsRenderer) {
 void TpsRenderer::addGrid(FpsRenderer *fpsRenderer) {
     float padding = 0.5;
     const vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-    for (int k : vector<int>{0 + padding, fpsRenderer->data_axis_z - padding}) {
-        for (int j : vector<int>{0 + padding, fpsRenderer->data_axis_y - padding}) {
-            for (int i  : vector<int>{0 + padding, fpsRenderer->data_axis_x - padding}) {
+    for (float k : vector<float>{0 + padding, fpsRenderer->data_axis_z -1- padding}) {
+        for (float j : vector<float>{0 + padding, fpsRenderer->data_axis_y-1 - padding}) {
+            for (float i  : vector<float>{0 + padding, fpsRenderer->data_axis_x -1 - padding}) {
                 points->InsertNextPoint(i, j, k);
             }
         }
