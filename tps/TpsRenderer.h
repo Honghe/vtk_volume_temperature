@@ -38,6 +38,7 @@ public:
     void addFpsCameraPoly();
 
     vtkSmartPointer<vtkActor> fpsCameraActor;
+    vtkSmartPointer<vtkConeSource> CameraConeSource;
 };
 
 

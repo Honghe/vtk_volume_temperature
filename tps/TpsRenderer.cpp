@@ -51,13 +51,14 @@ void TpsRenderer::setCamera() {
 }
 
 void TpsRenderer::addFpsCameraPoly() {
-    vtkSmartPointer<vtkConeSource> coneSource =
-            vtkSmartPointer<vtkConeSource>::New();
-    coneSource->SetRadius(6);
-    coneSource->SetHeight(10);
-    coneSource->Update();
+    CameraConeSource = vtkSmartPointer<vtkConeSource>::New();
+    CameraConeSource->SetRadius(5);
+    CameraConeSource->SetHeight(11);
+    // set Direction to follow FPS Camera
+    CameraConeSource->SetDirection(fpsRenderer->renderer->GetActiveCamera()->GetDirectionOfProjection());
+    CameraConeSource->Update();
 
-    vtkSmartPointer<vtkPolyData> cone = coneSource->GetOutput();
+    vtkSmartPointer<vtkPolyData> cone = CameraConeSource->GetOutput();
 
     vtkSmartPointer<vtkPolyDataMapper> mapper =
             vtkSmartPointer<vtkPolyDataMapper>::New();
@@ -71,7 +72,9 @@ void TpsRenderer::addFpsCameraPoly() {
 }
 
 void TpsRenderer::updateTpsCamera() {
-    vtkCamera *pCamera = fpsRenderer->renderer->GetActiveCamera();
+    // Update Direction
+    CameraConeSource->SetDirection(fpsRenderer->renderer->GetActiveCamera()->GetDirectionOfProjection());
+    CameraConeSource->Update();
     fpsCameraActor->SetPosition(fpsRenderer->renderer->GetActiveCamera()->GetPosition());
 }
 
