@@ -8,8 +8,10 @@
 
 #include <vtkRenderWindow.h>
 #include <vtkSmartPointer.h>
-#include <fps/FpsRenderer.h>
-#include <tps/TpsRenderer.h>
+#include "fps/FpsRenderer.h"
+#include "tps/TpsRenderer.h"
+#include "difference/DifferenceRenderer.h"
+
 
 class MyDirector {
 public:
@@ -50,6 +52,8 @@ public:
     void fpsRendererSetCamera();
 
     void fpsRendererCameraUpdateEvent();
+
+    DifferenceRenderer *differenceRenderer;
 };
 
 #endif //DEMO_VTK_TUTORIAL_MYDIRECTOR_H

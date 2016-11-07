@@ -24,6 +24,7 @@ set(SOURCE_FILES
         jet256colormap.cpp
         fps/CameraEventCallback.cpp
         MyDirector.cpp
+        difference/DifferenceRenderer.cpp
         )
 
 set(name "vr_temperature_1103")

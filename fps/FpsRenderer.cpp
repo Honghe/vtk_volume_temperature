@@ -101,7 +101,7 @@ void FpsRenderer::readFile(std::string fileName) {
 
     float *originMax = std::max_element(xyzs.origin(), xyzs.origin() + xyzs.num_elements());
     float *originMin = std::min_element(xyzs.origin(), xyzs.origin() + xyzs.num_elements());
-    cout << "origin max min " << originMax[0] << " " << originMin[0] << endl;
+    cout << "origin min max" << originMin[0] << " " << originMax[0] << endl;
 
     int *dims = imgData->GetDimensions();
     for (int k = 0; k < dims[2]; k++) {
@@ -128,11 +128,11 @@ void FpsRenderer::addGrid() {
     myDirector->fpsRendererAddGrid();
 }
 
-void FpsRenderer::setTimeEventObserver() {
+void FpsRenderer::setTimeEventObserver(int interval) {
     const vtkSmartPointer<TimerCallback> &timerCallback = vtkSmartPointer<TimerCallback>::New();
     timerCallback->init(this);
     renderInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);
-    int timerId = renderInteractor->CreateRepeatingTimer(100);
+    int timerId = renderInteractor->CreateRepeatingTimer(interval);
     std::cout << "timerId: " << timerId << std::endl;
 }
 
@@ -181,6 +181,7 @@ void FpsRenderer::addTemperatureTextWidget() {
     text_representation->GetPosition2Coordinate()->SetValue(0.06, 0.06);
     temperatureTextWidget = vtkSmartPointer<vtkTextWidget>::New();
     temperatureTextWidget->SetRepresentation(text_representation);
+    temperatureTextWidget->SetCurrentRenderer(renderer);
     temperatureTextWidget->SetInteractor(renderInteractor);
     temperatureTextWidget->SetTextActor(temperatureTextActor);
     temperatureTextWidget->SelectableOff();
@@ -197,6 +198,7 @@ void FpsRenderer::addFileNameTextWidget() {
     text_representation->GetPosition2Coordinate()->SetValue(0.3, 0.2);
     text_widget = vtkSmartPointer<vtkTextWidget>::New();
     text_widget->SetRepresentation(text_representation);
+    text_widget->SetCurrentRenderer(renderer);
     text_widget->SetInteractor(renderInteractor);
     text_widget->SetTextActor(text_actor);
     text_widget->SelectableOff();

@@ -130,7 +130,7 @@ public:
     /**
      * auto read the next file
      */
-    void setTimeEventObserver();
+    void setTimeEventObserver(int interval);
 
     void addCameraEventCallback();
 };
