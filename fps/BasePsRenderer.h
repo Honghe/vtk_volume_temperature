@@ -151,6 +151,7 @@ protected:
     vtkSmartPointer<vtkTextWidget> temperatureTextWidget;
     vtkSmartPointer<vtkVolume> volume;
     std::string screenShotDir;
+    vtkSmartPointer<vtkLookupTable> lookupTable;
 };
 
 

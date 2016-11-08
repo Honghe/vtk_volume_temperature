@@ -204,6 +204,7 @@ void FpsRenderer::addFileNameTextWidget() {
     text_widget->SelectableOff();
     text_widget->GetBorderRepresentation()->SetShowBorderToOff();
     text_widget->On();
+    myDirector->fpsRendererAddFileNameTextWidget();
 }
 
 void FpsRenderer::setCamera() {

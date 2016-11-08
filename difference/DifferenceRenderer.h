@@ -20,6 +20,7 @@ public:
     DifferenceRenderer(vtkSmartPointer<vtkRenderWindow> renderWin,
                        vtkSmartPointer<vtkRenderWindowInteractor> renderInteractor,
                        MyDirector *myDirector);
+    void addTitleTextWidget();
 
     void setCamera();
 
@@ -31,6 +32,8 @@ public:
     unsigned char calTemperatureDifference(int i, int j, int k);
 
     void prepareVolume();
+
+    void addScalarBarWidget();
 };
 
 

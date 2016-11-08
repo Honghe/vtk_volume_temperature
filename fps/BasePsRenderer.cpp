@@ -75,7 +75,7 @@ void BasePsRenderer::addScalarBarWidget() {
     vtkTextProperty *pProperty = scalarBarActor->GetLabelTextProperty();
     pProperty->SetFontSize(16);
     pProperty->SetColor(1, 1, 1);
-    const vtkSmartPointer<vtkLookupTable> &lookupTable = vtkSmartPointer<vtkLookupTable>::New();
+    lookupTable = vtkSmartPointer<vtkLookupTable>::New();
     lookupTable->SetRange(temperature_min, temperature_max);
     lookupTable->SetRampToLinear();
     lookupTable->SetNumberOfTableValues(colorNumber);

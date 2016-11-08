@@ -41,11 +41,11 @@ void TpsRenderer::setCamera() {
     pCamera->SetFocalPoint(data_axis_x / 2, data_axis_y / 2, data_axis_z / 2);
     pCamera->SetViewUp(0, 1, 0);
 //        pCamera->SetPosition(data_axis_x * 3, data_axis_y * 3, -data_axis_z * 2);
-    pCamera->SetPosition(0, 0, -350);
+    pCamera->SetPosition(0, 0, -400);
     double *position = pCamera->GetPosition();
 //        pCamera->SetClippingRange(20, 1000);  // 每次有事件导致Render后，会被重置。
-    pCamera->Elevation(30);
-    pCamera->Azimuth(-110);
+    pCamera->Elevation(20);
+    pCamera->Azimuth(-40);
     //
     addFpsCameraPoly();
 }

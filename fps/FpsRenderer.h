@@ -133,6 +133,7 @@ public:
     void setTimeEventObserver(int interval);
 
     void addCameraEventCallback();
+
 };
 
 

@@ -47,6 +47,59 @@ void DifferenceRenderer::setCamera() {
     pCamera->Azimuth(-40);
 }
 
+void DifferenceRenderer::addScalarBarWidget() {
+//    BasePsRenderer::addScalarBarWidget();
+    const vtkSmartPointer<vtkScalarBarActor> scalarBarActor = vtkSmartPointer<vtkScalarBarActor>::New();
+    scalarBarActor->SetMaximumWidthInPixels(72);
+    scalarBarActor->SetOrientationToHorizontal();
+    scalarBarActor->UnconstrainedFontSizeOn();
+    vtkTextProperty *pProperty = scalarBarActor->GetLabelTextProperty();
+    pProperty->SetFontSize(16);
+    pProperty->SetColor(1, 1, 1);
+    lookupTable = vtkSmartPointer<vtkLookupTable>::New();
+    // change range, the min temperature is 0
+    lookupTable->SetRange(0, temperature_max);
+    lookupTable->SetRampToLinear();
+    lookupTable->SetNumberOfTableValues(colorNumber);
+    lookupTable->Build();
+
+    // 使用自己的配色
+//    for (int i = 0; i < colorNumber; ++i) {
+//        vector<double> &row = myLookTable[i];
+//        row[0] = ((float) colorNumber - 1 - i) / (colorNumber - 1) * ((colorNumber - 30 - 130.0) / (colorNumber - 30))
+//                 + 130.0 / (colorNumber - 30);
+//        row[1] = ((float) colorNumber - 1 - i) / (colorNumber - 1) * ((colorNumber - 45.0) / (colorNumber - 1));
+//        row[2] = ((float) colorNumber - 1 - i) / (colorNumber - 1) * ((colorNumber - 30.0) / (colorNumber - 1));
+//        row[3] = 1;
+//        printf("%03d %03.2f %03.2f %03.2f\n", i, row[0], row[1], row[2]);
+//    }
+
+    // 使用 jet 256 配色
+    for (int i = 0; i < colorNumber; ++i) {
+        vector<double> &row = myLookTable[i];
+        float *tableValue = Jet256ColorMap::colormap[i];
+        for (int j = 0; j < rgbaLength; ++j) {
+            row[j] = tableValue[j];
+        }
+//            printf("%d %03.2f %03.2f %03.2f\n", i, row[0], row[1], row[2]);
+    }
+
+    for (int k = 0; k < colorNumber; ++k) {
+        vector<double> &row = myLookTable[k];
+        lookupTable->SetTableValue(k, row[0], row[1], row[2], row[3]);
+    }
+
+    scalarBarActor->SetLookupTable(lookupTable);
+    scalarBarWidget = vtkSmartPointer<vtkScalarBarWidget>::New();
+    scalarBarWidget->SetInteractor(renderInteractor);
+    scalarBarWidget->SetCurrentRenderer(renderer);
+    scalarBarWidget->SetScalarBarActor(scalarBarActor);
+    vtkScalarBarRepresentation *pRepresentation = scalarBarWidget->GetScalarBarRepresentation();
+    pRepresentation->SetPosition(0.9, 0.053796);
+    pRepresentation->SetShowBorderToOff();
+    scalarBarWidget->On();
+}
+
 void DifferenceRenderer::initVolumeDataMemory() {
     imgData = vtkSmartPointer<vtkStructuredPoints>::New();
     imgData->SetExtent(0, data_axis_x - 1, 0, data_axis_y - 1, 0, data_axis_z - 1);
@@ -89,7 +142,9 @@ void DifferenceRenderer::updateImgData() {
 unsigned char DifferenceRenderer::calTemperatureDifference(int i, int j, int k) {
     int result = 0;
     if (imgDataArrayVector.size() < 2) {
-        return rand() % 20;
+        // TODO 2016.11.08 若第一帧是纯色的话，Render 就不会更新后面的, 如何解决这个bug
+        // 目前先用随机数来填第一帧暂时解决
+        return rand() % colorNumber;
     }
     for (int l = 1; l < imgDataArrayVector.size(); ++l) {
         // 使用 imgData 这个类的内置方法
@@ -101,7 +156,6 @@ unsigned char DifferenceRenderer::calTemperatureDifference(int i, int j, int k) 
         result += abs(((static_cast<unsigned char *>(imgData->GetArrayPointer(imgDataArrayVector[l], idx)))[0] -
                        (static_cast<unsigned char *>(imgData->GetArrayPointer(imgDataArrayVector[l - 1], idx)))[0]));
     }
-//    result += 200;
     if (result < 0 || result > 255) {
         cout << "temperature difference < 0 || > 255\n";
 //        throw MyException("temperature difference < 0 || > 255");
@@ -109,24 +163,44 @@ unsigned char DifferenceRenderer::calTemperatureDifference(int i, int j, int k) 
     if (result < 0) {
         result = 0;
     }
-    if(result > 255) {
-        result = 255;
+    if (result > colorNumber - 1) {
+        result = colorNumber - 1;
     }
     return (unsigned char) result;
 }
 
+void DifferenceRenderer::addTitleTextWidget() {
+    text_actor = vtkSmartPointer<vtkTextActor>::New();
+    text_actor->SetInput("空间各点随时间温度变化程度(℃)");
+    text_actor->GetTextProperty()->SetFontFamily(VTK_FONT_FILE);
+    text_actor->GetTextProperty()->SetFontFile(
+            "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf");
+    text_actor->GetTextProperty()->SetColor(0.9, .9, 0.9);
+//    text_actor->GetTextProperty()->SetFontSize(10);
+    const vtkSmartPointer<vtkTextRepresentation> &text_representation = vtkSmartPointer<vtkTextRepresentation>::New();
+    text_representation->GetPositionCoordinate()->SetValue(0.3, 0.85);
+    text_representation->GetPosition2Coordinate()->SetValue(0.3, 0.04);
+    text_widget = vtkSmartPointer<vtkTextWidget>::New();
+    text_widget->SetRepresentation(text_representation);
+    text_widget->SetCurrentRenderer(renderer);
+    text_widget->SetInteractor(renderInteractor);
+    text_widget->SetTextActor(text_actor);
+    text_widget->SelectableOff();
+    text_widget->GetBorderRepresentation()->SetShowBorderToOff();
+    text_widget->On();
+}
 
 void DifferenceRenderer::prepareVolume() {
 //    BasePsRenderer::prepareVolume();
-
     const vtkSmartPointer<vtkColorTransferFunction> colorTransferFunction = vtkSmartPointer<vtkColorTransferFunction>::New();
     for (int i = 2; i < colorNumber; ++i) {
         vector<double> &rgba = myLookTable[i];
         colorTransferFunction->AddRGBPoint(i, rgba[0], rgba[1], rgba[2]);
     }
     const vtkSmartPointer<vtkPiecewiseFunction> alphaChannelFunction = vtkSmartPointer<vtkPiecewiseFunction>::New();
-    alphaChannelFunction->AddPoint(0, 0.0);
-    alphaChannelFunction->AddPoint(255, 0.04);
+//    alphaChannelFunction->AddPoint(0, 0.00);
+    alphaChannelFunction->AddPoint(1, 0.01);
+    alphaChannelFunction->AddPoint(255, 0.03);
 
     const vtkSmartPointer<vtkVolumeProperty> volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();
     volumeProperty->SetColor(colorTransferFunction);

@@ -54,6 +54,8 @@ public:
     void fpsRendererCameraUpdateEvent();
 
     DifferenceRenderer *differenceRenderer;
+
+    void fpsRendererAddFileNameTextWidget();
 };
 
 #endif //DEMO_VTK_TUTORIAL_MYDIRECTOR_H
