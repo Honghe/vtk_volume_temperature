@@ -13,6 +13,8 @@ void MyDirector::init() {
     renderInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
     renderInteractor->SetRenderWindow(renderWin);
     renderWin->SetSize(1000, 800);
+    // do anything after Initialize, otherwise will throw error
+    renderInteractor->Initialize();
 
     std::string fileBaseDir("/home/honhe/Downloads/volume_render/temperature_data/2016-11-02");
     // make output dir
@@ -45,8 +47,7 @@ void MyDirector::init() {
     fpsRenderer->addGrid();
     fpsRenderer->prepareVolume();
     fpsRenderer->addVolumePicker();
-    // do anything after Initialize, otherwise will throw error
-    renderInteractor->Initialize();
+
 
     fpsRenderer->readFile(fpsRenderer->fileNames[0].string());
 

@@ -110,6 +110,7 @@ void FpsRenderer::readFile(std::string fileName) {
                 unsigned char *pixel = static_cast<unsigned char *>(imgData->GetScalarPointer(i, j, k));
                 idx = {{i, k, j}};
                 pixel[0] = (unsigned char) temperatureNormalize(xyzs(idx));
+
             }
         }
     }
