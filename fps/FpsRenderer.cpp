@@ -6,7 +6,11 @@
 #include "FpsRenderer.h"
 #include "TimerCallback.h"
 #include "CameraEventCallback.h"
+#include "vtkPolyDataMapper.h"
+#include "vtkTransform.h"
+#include "WindTimerCallback.h"
 #include <MyDirector.h>
+#include <vtkCubeSource.h>
 
 using namespace boost::filesystem;
 
@@ -242,4 +246,99 @@ void FpsRenderer::addCameraEventCallback() {
     const vtkSmartPointer<CameraEventCallback> &callback = vtkSmartPointer<CameraEventCallback>::New();
     callback->init(this);
     renderer->AddObserver(vtkCommand::StartEvent, callback);
+}
+
+void FpsRenderer::addWindFlow() {
+    int wind_axis_x = 30;
+    int wind_axis_y = 20;
+    int wind_axis_z = 20;
+    int windcolorNumber = 48;
+
+    const vtkSmartPointer<vtkPolyData> &polyData = vtkSmartPointer<vtkPolyData>::New();
+    const vtkSmartPointer<vtkPoints> &points = vtkSmartPointer<vtkPoints>::New();
+    const vtkSmartPointer<vtkCellArray> &vertices = vtkSmartPointer<vtkCellArray>::New();
+    const vtkSmartPointer<vtkUnsignedCharArray> &scalars = vtkSmartPointer<vtkUnsignedCharArray>::New();
+
+    points->SetDataTypeToFloat();
+    points->Reset();
+
+    scalars->SetName("Scalar");
+    for (int i = 0; i < wind_axis_x; ++i) {
+        for (int j = 0; j < wind_axis_y; ++j) {
+            for (int k = 0; k < wind_axis_z; ++k) {
+                points->InsertNextPoint(i, j, k);
+                scalars->InsertNextValue(i * 2);
+            }
+        }
+    }
+
+    for (vtkIdType j = 0; j < (vtkIdType) points->GetNumberOfPoints(); ++j) {
+        vertices->InsertNextCell(1);
+        vertices->InsertCellPoint(j);
+    }
+    polyData->SetPoints(points);
+    polyData->SetVerts(vertices);
+    polyData->GetPointData()->SetScalars(scalars);
+    polyData->Modified();
+
+    vtkSmartPointer<vtkPolyDataMapper> mapper =
+            vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputData(polyData);
+    mapper->SetScalarRange(0, windcolorNumber-1);
+
+    const vtkSmartPointer<vtkLookupTable> &lut = vtkSmartPointer<vtkLookupTable>::New();
+    lut->SetNumberOfTableValues(windcolorNumber);
+    lut->Build();
+    for (int l = 0; l < windcolorNumber; ++l) {
+        double *pDouble = lut->GetTableValue(l);
+        lut->SetTableValue(l, pDouble[0], pDouble[1], pDouble[2], float(l) / (windcolorNumber * 10) + 0.005);
+    }
+
+    mapper->SetLookupTable(lut);
+    mapper->SetColorModeToMapScalars();
+    mapper->SetScalarModeToUsePointData();
+
+    const vtkSmartPointer<vtkProperty> actorProperty = vtkSmartPointer<vtkProperty>::New();
+
+    windActor = vtkSmartPointer<vtkActor>::New();
+    windActor->SetMapper(mapper);
+    windActor->SetProperty(actorProperty);
+    windActor->GetProperty()->SetPointSize(4);
+
+    const vtkSmartPointer<vtkTransform> &transForm = vtkSmartPointer<vtkTransform>::New();
+    transForm->Translate(data_axis_x - 20, 0, 0);
+    windActor->SetUserTransform(transForm);
+
+    renderer->AddActor(windActor);
+
+    vtkSmartPointer<WindTimerCallback> timerCallback = vtkSmartPointer<WindTimerCallback>::New();
+    timerCallback->init(renderWin, points, scalars);
+    renderInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);
+    int interval = 30;
+    renderInteractor->CreateRepeatingTimer(interval);
+}
+
+void FpsRenderer::addAirCondition() {
+    // Create a cube.
+    vtkSmartPointer<vtkCubeSource> cubeSource =
+            vtkSmartPointer<vtkCubeSource>::New();
+    cubeSource->SetXLength(3);
+    cubeSource->SetYLength(20);
+    cubeSource->SetZLength(20);
+
+    // Create a mapper and actor.
+    vtkSmartPointer<vtkPolyDataMapper> mapper =
+            vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputConnection(cubeSource->GetOutputPort());
+
+    vtkSmartPointer<vtkActor> actor =
+            vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper(mapper);
+
+    const vtkSmartPointer<vtkTransform> &transForm = vtkSmartPointer<vtkTransform>::New();
+    transForm->Translate(data_axis_x + 10, cubeSource->GetYLength() / 2,
+                         cubeSource->GetZLength() / 2);
+    actor->SetUserTransform(transForm);
+    // Add the actors to the scene
+    renderer->AddActor(actor);
 }

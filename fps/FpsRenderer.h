@@ -134,6 +134,11 @@ public:
 
     void addCameraEventCallback();
 
+    void addWindFlow();
+
+    vtkSmartPointer<vtkActor> windActor;
+
+    void addAirCondition();
 };
 
 

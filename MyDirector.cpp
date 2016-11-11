@@ -45,13 +45,16 @@ void MyDirector::init() {
     fpsRenderer->initVolumeDataMemory();
     fpsRenderer->setCamera();
     fpsRenderer->addGrid();
+    fpsRenderer->addWindFlow();
     fpsRenderer->prepareVolume();
     fpsRenderer->addVolumePicker();
-
+    //
+    fpsRenderer->addWindFlow();
+    fpsRenderer->addAirCondition();
 
     fpsRenderer->readFile(fpsRenderer->fileNames[0].string());
 
-    batch = true;
+//    batch = true;
     if (batch) {
         mkdir(screenShotDir.c_str(), 0744);
         fpsRenderer->setTimeEventObserver(100);
