@@ -197,17 +197,19 @@ void FpsRenderer::addTemperatureTextWidget() {
 void FpsRenderer::addFileNameTextWidget() {
     text_actor = vtkSmartPointer<vtkTextActor>::New();
     text_actor->SetInput("");
+    text_actor->GetTextProperty()->SetFontFamily(VTK_FONT_FILE);
+    text_actor->GetTextProperty()->SetFontFile(
+            "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf");
     text_actor->GetTextProperty()->SetColor(0.9, .9, 0.9);
-    const vtkSmartPointer<vtkTextRepresentation> &text_representation = vtkSmartPointer<vtkTextRepresentation>::New();
-    text_representation->GetPositionCoordinate()->SetValue(0.3, 0.85);
-    text_representation->GetPosition2Coordinate()->SetValue(0.3, 0.2);
     text_widget = vtkSmartPointer<vtkTextWidget>::New();
-    text_widget->SetRepresentation(text_representation);
     text_widget->SetCurrentRenderer(renderer);
     text_widget->SetInteractor(renderInteractor);
     text_widget->SetTextActor(text_actor);
     text_widget->SelectableOff();
     text_widget->GetBorderRepresentation()->SetShowBorderToOff();
+    vtkTextRepresentation *pRepresentation = (vtkTextRepresentation *) text_widget->GetRepresentation();
+    pRepresentation->SetPosition(0.3, 0.9);
+    pRepresentation->SetPosition2(0.3, 0.06);
     text_widget->On();
     myDirector->fpsRendererAddFileNameTextWidget();
 }
@@ -314,7 +316,7 @@ void FpsRenderer::addWindFlow() {
     vtkSmartPointer<WindTimerCallback> timerCallback = vtkSmartPointer<WindTimerCallback>::New();
     timerCallback->init(renderWin, points, scalars);
     renderInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);
-    int interval = 30;
+    int interval = 20;
     renderInteractor->CreateRepeatingTimer(interval);
 }
 

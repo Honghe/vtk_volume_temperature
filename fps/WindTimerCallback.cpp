@@ -21,7 +21,7 @@ void WindTimerCallback::init(vtkSmartPointer<vtkRenderWindow> renderWindow, vtkS
 void WindTimerCallback::Execute(vtkObject *vtkNotUsed(caller),
                                 unsigned long event,
                                 void *calldata) {
-    cout << "WindTimerCallback " << endl;
+//    cout << "WindTimerCallback " << endl;
     int wind_axis_x = 30;
     int wind_axis_y = 20;
     int wind_axis_z = 20;

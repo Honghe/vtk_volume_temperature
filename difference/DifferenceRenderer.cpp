@@ -176,17 +176,17 @@ void DifferenceRenderer::addTitleTextWidget() {
     text_actor->GetTextProperty()->SetFontFile(
             "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf");
     text_actor->GetTextProperty()->SetColor(0.9, .9, 0.9);
-//    text_actor->GetTextProperty()->SetFontSize(10);
-    const vtkSmartPointer<vtkTextRepresentation> &text_representation = vtkSmartPointer<vtkTextRepresentation>::New();
-    text_representation->GetPositionCoordinate()->SetValue(0.3, 0.85);
-    text_representation->GetPosition2Coordinate()->SetValue(0.3, 0.04);
+//    text_actor->GetTextProperty()->SetFontSize(4);
     text_widget = vtkSmartPointer<vtkTextWidget>::New();
-    text_widget->SetRepresentation(text_representation);
     text_widget->SetCurrentRenderer(renderer);
     text_widget->SetInteractor(renderInteractor);
     text_widget->SetTextActor(text_actor);
     text_widget->SelectableOff();
     text_widget->GetBorderRepresentation()->SetShowBorderToOff();
+    vtkTextRepresentation *pRepresentation = (vtkTextRepresentation *) text_widget->GetRepresentation();
+    // Widget中 字体的大小好像是根据 Y 轴即其高度决定的
+    pRepresentation->SetPosition(0.2, 0.9);     // PositionX 数值如何计算才居中 PositionX = (1-Position2X)/2
+    pRepresentation->SetPosition2(0.6, 0.04);   // 如果文字是NON-ASCII,则文字会依据大小超出设置的最大宽度，为毛？
     text_widget->On();
 }
 
