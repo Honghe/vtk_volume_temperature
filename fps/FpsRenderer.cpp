@@ -238,20 +238,20 @@ void FpsRenderer::addTemperatureTextWidget() {
 
 void FpsRenderer::addFileNameTextWidget() {
     text_actor = vtkSmartPointer<vtkTextActor>::New();
-    text_actor->SetInput("");
-    text_actor->GetTextProperty()->SetFontFamily(VTK_FONT_FILE);
-    text_actor->GetTextProperty()->SetFontFile(
-            "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf");
+    // TODO 2016.11.17 使用DroidSansFallbackFull字体（未确认其它非ASCII字体）时，更新文字在某些窗口大小下文字会大小闪烁
+//    text_actor->GetTextProperty()->SetFontFamily(VTK_FONT_FILE);
+//    text_actor->GetTextProperty()->SetFontFile(
+//            "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf");
     text_actor->GetTextProperty()->SetColor(0.9, .9, 0.9);
     text_widget = vtkSmartPointer<vtkTextWidget>::New();
     text_widget->SetCurrentRenderer(renderer);
     text_widget->SetInteractor(renderInteractor);
     text_widget->SetTextActor(text_actor);
     text_widget->SelectableOff();
-    text_widget->GetBorderRepresentation()->SetShowBorderToOff();
+//    text_widget->GetBorderRepresentation()->SetShowBorderToOff();
     vtkTextRepresentation *pRepresentation = (vtkTextRepresentation *) text_widget->GetRepresentation();
     pRepresentation->SetPosition(0.3, 0.9);
-    pRepresentation->SetPosition2(0.3, 0.06);
+    pRepresentation->SetPosition2(0.4, 0.05);
     text_widget->On();
     myDirector->fpsRendererAddFileNameTextWidget();
 }

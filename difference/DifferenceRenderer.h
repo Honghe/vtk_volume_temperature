@@ -34,6 +34,8 @@ public:
     void prepareVolume();
 
     void addScalarBarWidget();
+
+    unsigned char accumulateTemperatureDifference(int i, int j, int k, unsigned char i1);
 };
 
 

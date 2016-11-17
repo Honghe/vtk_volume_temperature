@@ -120,20 +120,26 @@ void DifferenceRenderer::updateImgData() {
     // 使用 vtkUnsignedCharArray，与 imgData 中的类型一样，不然操作数据不正确
     vtkUnsignedCharArray *aa = vtkUnsignedCharArray::New();
     aa->DeepCopy(fpsRenderer->imgData->GetPointData()->GetScalars());
+    // TODO 2016.11.17 一直累加存储，内存溢出
     imgDataArrayVector.push_back(aa);
 
-    if (imgDataArrayVector.size() < 2) {
+    unsigned long imgDataArrayLength = imgDataArrayVector.size();
+    if (imgDataArrayLength < 2) {   // >=2个温度值才能计算温度差
         return;
     }
     //
     int *dims = imgData->GetDimensions();
     int min = 255;
     int max = 0;
+    // 第次都从头计算温度差，数据多的话计算量过大。因此，用累加的方法：新温度差之和=原温度差之和+最近一帧温度差
     for (int k = 0; k < dims[2]; k++) {
         for (int j = 0; j < dims[1]; j++) {
             for (int i = 0; i < dims[0]; i++) {
                 unsigned char *pixel = static_cast<unsigned char *>(imgData->GetScalarPointer(i, j, k));
-                pixel[0] = calTemperatureDifference(i, j, k);
+                if (imgDataArrayLength <= 2) {  // 赋初值为0
+                    pixel[0] = 0;
+                }
+                pixel[0] = accumulateTemperatureDifference(i, j, k, pixel[0]); // 累加
                 min = min > pixel[0] ? pixel[0] : min;
                 max = max > pixel[0] ? max : pixel[0];
             }
@@ -153,28 +159,47 @@ void DifferenceRenderer::updateImgData() {
     cout << "difference min max " << min << " " << max << endl;
 }
 
+unsigned char DifferenceRenderer::accumulateTemperatureDifference(int i, int j, int k, unsigned char tmpDelta) {
+    int newTmpDelta = calTemperatureDifference(i,j,k) + tmpDelta;
+    if (newTmpDelta < 0 || newTmpDelta > 255) {
+//        cout << "temperature difference < 0 || > 255\n";
+//        throw MyException("temperature difference < 0 || > 255");
+    }
+    if (newTmpDelta < 0) {
+        newTmpDelta = 0;
+    }
+    if (newTmpDelta > colorNumber - 1) {
+        newTmpDelta = colorNumber - 1;
+    }
+    return newTmpDelta;
+}
+
 unsigned char DifferenceRenderer::calTemperatureDifference(int i, int j, int k) {
     int result = 0;
-    for (int l = 1; l < imgDataArrayVector.size(); ++l) {
+    // 第次都从头计算温度差，数据多的话计算量过大。因此，用累加的方法：新温度差之和=原温度差之和+最近一帧温度差
+    unsigned long imgDataArrayLength = imgDataArrayVector.size();
+    for (int l = imgDataArrayLength - 1; l < imgDataArrayLength; ++l) {  // 只计算一帧
         // 使用 imgData 这个类的内置方法
         int idx[3];
         idx[0] = i;
         idx[1] = j;
         idx[2] = k;
-        // 目前先用简单方法，取绝对值
+        // 温度差目前先用简单方法，取绝对值
         result += abs(((static_cast<unsigned char *>(imgData->GetArrayPointer(imgDataArrayVector[l], idx)))[0] -
                        (static_cast<unsigned char *>(imgData->GetArrayPointer(imgDataArrayVector[l - 1], idx)))[0]));
+        // TODO 2016.11.17 更好的规一化方法
+        result *= 0.5;  // 减小幅度
     }
-    if (result < 0 || result > 255) {
-//        cout << "temperature difference < 0 || > 255\n";
-//        throw MyException("temperature difference < 0 || > 255");
-    }
-    if (result < 0) {
-        result = 0;
-    }
-    if (result > colorNumber - 1) {
-        result = colorNumber - 1;
-    }
+//    if (result < 0 || result > 255) {
+////        cout << "temperature difference < 0 || > 255\n";
+////        throw MyException("temperature difference < 0 || > 255");
+//    }
+//    if (result < 0) {
+//        result = 0;
+//    }
+//    if (result > colorNumber - 1) {
+//        result = colorNumber - 1;
+//    }
     return (unsigned char) result;
 }
 
@@ -223,3 +248,4 @@ void DifferenceRenderer::prepareVolume() {
     volume->SetProperty(volumeProperty);
     renderer->AddVolume(volume);
 }
+
