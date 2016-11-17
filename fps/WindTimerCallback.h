@@ -28,6 +28,17 @@ vtkTypeMacro(WindTimerCallback, vtkCommand);
 
     vtkSmartPointer<vtkUnsignedCharArray> scalars;
     vtkSmartPointer<vtkPoints> points;
+    int wind_axis_x;
+    int wind_axis_y;
+    int wind_axis_z;
+
+    void Modified();
+
+    int GetDebug();
+
+    vtkSetMacro(wind_axis_x, int);
+    vtkSetMacro(wind_axis_y, int);
+    vtkSetMacro(wind_axis_z, int);
 };
 
 

@@ -254,7 +254,7 @@ void FpsRenderer::addWindFlow() {
     int wind_axis_x = 30;
     int wind_axis_y = 20;
     int wind_axis_z = 20;
-    int windcolorNumber = 48;
+    int windcolorNumber = wind_axis_x;
 
     const vtkSmartPointer<vtkPolyData> &polyData = vtkSmartPointer<vtkPolyData>::New();
     const vtkSmartPointer<vtkPoints> &points = vtkSmartPointer<vtkPoints>::New();
@@ -268,8 +268,13 @@ void FpsRenderer::addWindFlow() {
     for (int i = 0; i < wind_axis_x; ++i) {
         for (int j = 0; j < wind_axis_y; ++j) {
             for (int k = 0; k < wind_axis_z; ++k) {
-                points->InsertNextPoint(i, j, k);
-                scalars->InsertNextValue(i * 2);
+                double x = i - rand() % 20 * 0.05;
+                // 主要初始给个随机，随后可以不用偏移，如何随后随机偏移的话看过去动态比较厉害
+                double y = j - (rand() % 20 - 10) * 0.05;
+                double z = k - (rand() % 20 - 10) * 0.05;
+                points->InsertNextPoint(x, y, z);
+                // scalar 用作颜色渲染
+                scalars->InsertNextValue(i);
             }
         }
     }
@@ -293,6 +298,7 @@ void FpsRenderer::addWindFlow() {
     lut->Build();
     for (int l = 0; l < windcolorNumber; ++l) {
         double *pDouble = lut->GetTableValue(l);
+        // 离出风口越远，透明度越小
         lut->SetTableValue(l, pDouble[0], pDouble[1], pDouble[2], float(l) / (windcolorNumber * 10) + 0.005);
     }
 
@@ -305,7 +311,7 @@ void FpsRenderer::addWindFlow() {
     windActor = vtkSmartPointer<vtkActor>::New();
     windActor->SetMapper(mapper);
     windActor->SetProperty(actorProperty);
-    windActor->GetProperty()->SetPointSize(4);
+    windActor->GetProperty()->SetPointSize(2);
 
     const vtkSmartPointer<vtkTransform> &transForm = vtkSmartPointer<vtkTransform>::New();
     transForm->Translate(data_axis_x - 20, 0, 0);
@@ -314,9 +320,13 @@ void FpsRenderer::addWindFlow() {
     renderer->AddActor(windActor);
 
     vtkSmartPointer<WindTimerCallback> timerCallback = vtkSmartPointer<WindTimerCallback>::New();
+    timerCallback->Setwind_axis_x(wind_axis_x);
+    timerCallback->Setwind_axis_y(wind_axis_y);
+    timerCallback->Setwind_axis_z(wind_axis_z);
+
     timerCallback->init(renderWin, points, scalars);
     renderInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);
-    int interval = 20;
+    int interval = 30;
     renderInteractor->CreateRepeatingTimer(interval);
 }
 
