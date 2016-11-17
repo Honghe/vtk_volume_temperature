@@ -12,6 +12,7 @@
 #include "RenderEndEventCallback.h"
 #include <MyDirector.h>
 #include <vtkCubeSource.h>
+#include <chrono>
 
 using namespace boost::filesystem;
 
@@ -75,6 +76,7 @@ void FpsRenderer::listTemperatureFiles() {
 void FpsRenderer::readFile(std::string fileName) {
     std::string subName = fileName.substr(fileName.length() - 23, 19);
     cout << "read file " << subName << endl;
+    chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
 
     text_actor->SetInput(subName.c_str());
 
@@ -119,6 +121,10 @@ void FpsRenderer::readFile(std::string fileName) {
             }
         }
     }
+    chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::microseconds>(t2 - t1).count();
+    cout << "readFile used ms: " << duration / 1000 << endl;
+
     // update MTime for pipeline can refresh.
     imgData->Modified();
     myDirector->fpsRendererReadFile();
@@ -139,7 +145,7 @@ void FpsRenderer::setTimeEventObserver(int interval) {
     timerCallback->init(this);
     renderInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);
     int timerId = renderInteractor->CreateRepeatingTimer(interval);
-    std::cout << "timerId: " << timerId << std::endl;
+    std::cout << "read file timerId: " << timerId << std::endl;
 }
 
 std::string FpsRenderer::scalarToTemperature(int scalar) {
@@ -298,7 +304,7 @@ void FpsRenderer::addWindFlow() {
     vtkSmartPointer<vtkPolyDataMapper> mapper =
             vtkSmartPointer<vtkPolyDataMapper>::New();
     mapper->SetInputData(polyData);
-    mapper->SetScalarRange(0, windcolorNumber-1);
+    mapper->SetScalarRange(0, windcolorNumber - 1);
 
     const vtkSmartPointer<vtkLookupTable> &lut = vtkSmartPointer<vtkLookupTable>::New();
     lut->SetNumberOfTableValues(windcolorNumber);
@@ -334,7 +340,8 @@ void FpsRenderer::addWindFlow() {
     timerCallback->init(renderWin, points, scalars);
     renderInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);
     int interval = 30;
-    renderInteractor->CreateRepeatingTimer(interval);
+    int timerId = renderInteractor->CreateRepeatingTimer(interval);
+    std::cout << "addWindFlow timerId: " << timerId << std::endl;
 }
 
 void FpsRenderer::addAirCondition() {
