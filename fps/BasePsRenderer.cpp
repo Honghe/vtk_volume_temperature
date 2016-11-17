@@ -221,6 +221,9 @@ void BasePsRenderer::prepareVolume() {
 
 void BasePsRenderer::addOrientationMarkerWidget() {
     const vtkSmartPointer<vtkAxesActor> &axesActor = vtkSmartPointer<vtkAxesActor>::New();
+    // 更新Z轴的轴与箭头的颜色
+    axesActor->GetZAxisShaftProperty()->SetColor(1, 1, 1);
+    axesActor->GetZAxisTipProperty()->SetColor(1, 1, 1);
     orientationMarkerWidget = vtkSmartPointer<vtkOrientationMarkerWidget>::New();
     orientationMarkerWidget->SetOutlineColor(0.93, 0.57, 0.13);
     orientationMarkerWidget->SetOrientationMarker(axesActor);
