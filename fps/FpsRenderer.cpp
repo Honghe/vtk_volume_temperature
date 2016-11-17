@@ -9,6 +9,7 @@
 #include "vtkPolyDataMapper.h"
 #include "vtkTransform.h"
 #include "WindTimerCallback.h"
+#include "RenderEndEventCallback.h"
 #include <MyDirector.h>
 #include <vtkCubeSource.h>
 
@@ -248,6 +249,12 @@ void FpsRenderer::addCameraEventCallback() {
     const vtkSmartPointer<CameraEventCallback> &callback = vtkSmartPointer<CameraEventCallback>::New();
     callback->init(this);
     renderer->AddObserver(vtkCommand::StartEvent, callback);
+}
+
+void FpsRenderer::addRenderEndEventCallback() {
+    const vtkSmartPointer<RenderEndEventCallback> &callback = vtkSmartPointer<RenderEndEventCallback>::New();
+    callback->init(this);
+    renderer->AddObserver(vtkCommand::EndEvent, callback);
 }
 
 void FpsRenderer::addWindFlow() {

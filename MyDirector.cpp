@@ -48,6 +48,7 @@ void MyDirector::init() {
     fpsRenderer->addWindFlow();
     fpsRenderer->prepareVolume();
     fpsRenderer->addVolumePicker();
+    fpsRenderer->addRenderEndEventCallback();
     //
     fpsRenderer->addWindFlow();
     fpsRenderer->addAirCondition();

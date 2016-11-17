@@ -139,6 +139,11 @@ public:
     vtkSmartPointer<vtkActor> windActor;
 
     void addAirCondition();
+
+    /**
+     * 计算 fps
+     */
+    void addRenderEndEventCallback();
 };
 
 

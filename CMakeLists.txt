@@ -27,6 +27,7 @@ set(SOURCE_FILES
         difference/DifferenceRenderer.cpp
         fps/WindTimerCallback.cpp
         fps/WindTimerCallback.cpp
+        fps/RenderEndEventCallback.cpp
         )
 
 set(name "vr_temperature_1103")
