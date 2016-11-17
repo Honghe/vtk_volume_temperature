@@ -72,11 +72,12 @@ class MyDirector;
 /**
  * FPS Render
  */
-class FpsRenderer :public BasePsRenderer{
+class FpsRenderer : public BasePsRenderer {
 public:
 
     FpsRenderer(vtkSmartPointer<vtkRenderWindow> pointer, vtkSmartPointer<vtkRenderWindowInteractor> smartPointer,
                 MyDirector *pDirector);
+
     FpsRenderer();
 
     void init(std::string fileBaseDir, std::string screenShotDir);
@@ -144,6 +145,17 @@ public:
      * 计算 fps
      */
     void addRenderEndEventCallback();
+
+    /**
+     * 是否添加了模拟空调
+     */
+    bool isAddWindFlow;
+
+    void *_readFile(std::string fileNamePtr);
+
+    string lastFileName;
+
+    static void *_readFiel_helper(void *context);
 };
 
 

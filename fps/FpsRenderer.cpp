@@ -13,6 +13,7 @@
 #include <MyDirector.h>
 #include <vtkCubeSource.h>
 #include <chrono>
+#include <stdio.h>
 
 using namespace boost::filesystem;
 
@@ -27,17 +28,35 @@ FpsRenderer::FpsRenderer(vtkSmartPointer<vtkRenderWindow> renderWin,
 void FpsRenderer::init(std::string fileBaseDir, std::string screenShotDir) {
     BasePsRenderer::init(fileBaseDir, screenShotDir);
     myDirector->fpsRendererInit(this);
+    isAddWindFlow = false;
 }
 
 void FpsRenderer::initVolumeDataMemory() {
     imgData = vtkSmartPointer<vtkStructuredPoints>::New();
     imgData->SetExtent(0, data_axis_x - 1, 0, data_axis_y - 1, 0, data_axis_z - 1);
     imgData->AllocateScalars(VTK_UNSIGNED_CHAR, 1);
+
+    // TODO 2016.11.08 若第一帧是纯色的话，Render 就不会更新后面的, 如何解决这个bug
+    int *dims = imgData->GetDimensions();
+    for (int k = 0; k < dims[2]; k++) {
+        for (int j = 0; j < dims[1]; j++) {
+            for (int i = 0; i < dims[0]; i++) {
+                unsigned char *pixel = static_cast<unsigned char *>(imgData->GetScalarPointer(i, j, k));
+                pixel[0] = rand() % 256;
+            }
+        }
+    }
+    //
     myDirector->fpsRendererInitVolumeDataMemory();
 }
 
 void FpsRenderer::refreshRender() {
-    BasePsRenderer::refreshRender();
+    // 若已添加模拟空调，则刷新动作由模拟空调统一做
+    if (isAddWindFlow) {
+        return;
+    } else {
+        BasePsRenderer::refreshRender();
+    }
 }
 
 void FpsRenderer::render() {
@@ -73,7 +92,23 @@ void FpsRenderer::listTemperatureFiles() {
     }
 }
 
+void *FpsRenderer::_readFiel_helper(void *context) {
+    FpsRenderer *thisContext = (FpsRenderer *) context;
+    thisContext->_readFile(thisContext->lastFileName);
+}
+
 void FpsRenderer::readFile(std::string fileName) {
+    this->lastFileName = fileName;
+    pthread_t tid;
+    int ret = pthread_create(&tid, NULL, &FpsRenderer::_readFiel_helper, this);
+    if (ret != 0) {
+        cout << "readFile pthread_create error: error_code=" << ret << endl;
+    } else {
+        cout << "new thread id: " << tid << endl;
+    }
+}
+
+void *FpsRenderer::_readFile(std::string fileName) {
     std::string subName = fileName.substr(fileName.length() - 23, 19);
     cout << "read file " << subName << endl;
     chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
@@ -108,7 +143,7 @@ void FpsRenderer::readFile(std::string fileName) {
 
     float *originMax = std::max_element(xyzs.origin(), xyzs.origin() + xyzs.num_elements());
     float *originMin = std::min_element(xyzs.origin(), xyzs.origin() + xyzs.num_elements());
-    cout << "origin min max" << originMin[0] << " " << originMax[0] << endl;
+    cout << "origin min max: " << originMin[0] << " " << originMax[0] << endl;
 
     int *dims = imgData->GetDimensions();
     for (int k = 0; k < dims[2]; k++) {
@@ -117,17 +152,17 @@ void FpsRenderer::readFile(std::string fileName) {
                 unsigned char *pixel = static_cast<unsigned char *>(imgData->GetScalarPointer(i, j, k));
                 idx = {{i, k, j}};
                 pixel[0] = (unsigned char) temperatureNormalize(xyzs(idx));
-
             }
         }
     }
-    chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
-    auto duration = chrono::duration_cast<chrono::microseconds>(t2 - t1).count();
-    cout << "readFile used ms: " << duration / 1000 << endl;
 
     // update MTime for pipeline can refresh.
     imgData->Modified();
     myDirector->fpsRendererReadFile();
+
+    chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::microseconds>(t2 - t1).count();
+    cout << "readFile used ms: " << duration / 1000 << endl;
 }
 
 void FpsRenderer::addScalarBarWidget() {
@@ -264,6 +299,12 @@ void FpsRenderer::addRenderEndEventCallback() {
 }
 
 void FpsRenderer::addWindFlow() {
+    if (isAddWindFlow) {
+        return;
+    } else {
+        isAddWindFlow = true;
+    }
+
     int wind_axis_x = 30;
     int wind_axis_y = 20;
     int wind_axis_z = 20;

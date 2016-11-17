@@ -28,7 +28,8 @@ void TimerCallback::Execute(vtkObject *caller, unsigned long eventId,
     fpsRenderer->refreshRender();
 
     // save screenshot
-    fpsRenderer->screenShot(fpsRenderer->volumeFileIndex);
+    // TODO 2016.11.17 用异步线程截图，但有几个问题: 1. 如何保证对应文件名只截一张图
+//    fpsRenderer->screenShot(fpsRenderer->volumeFileIndex);
 
     fpsRenderer->volumeFileIndex++;
 }

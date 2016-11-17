@@ -104,6 +104,16 @@ void DifferenceRenderer::initVolumeDataMemory() {
     imgData = vtkSmartPointer<vtkStructuredPoints>::New();
     imgData->SetExtent(0, data_axis_x - 1, 0, data_axis_y - 1, 0, data_axis_z - 1);
     imgData->AllocateScalars(VTK_UNSIGNED_CHAR, 1);
+    // TODO 2016.11.08 若第一帧是纯色的话，Render 就不会更新后面的, 如何解决这个bug
+    int *dims = imgData->GetDimensions();
+    for (int k = 0; k < dims[2]; k++) {
+        for (int j = 0; j < dims[1]; j++) {
+            for (int i = 0; i < dims[0]; i++) {
+                unsigned char *pixel = static_cast<unsigned char *>(imgData->GetScalarPointer(i, j, k));
+                pixel[0] = rand() % 256;
+            }
+        }
+    }
 }
 
 void DifferenceRenderer::updateImgData() {
@@ -111,6 +121,10 @@ void DifferenceRenderer::updateImgData() {
     vtkUnsignedCharArray *aa = vtkUnsignedCharArray::New();
     aa->DeepCopy(fpsRenderer->imgData->GetPointData()->GetScalars());
     imgDataArrayVector.push_back(aa);
+
+    if (imgDataArrayVector.size() < 2) {
+        return;
+    }
     //
     int *dims = imgData->GetDimensions();
     int min = 255;
@@ -141,11 +155,6 @@ void DifferenceRenderer::updateImgData() {
 
 unsigned char DifferenceRenderer::calTemperatureDifference(int i, int j, int k) {
     int result = 0;
-    if (imgDataArrayVector.size() < 2) {
-        // TODO 2016.11.08 若第一帧是纯色的话，Render 就不会更新后面的, 如何解决这个bug
-        // 目前先用随机数来填第一帧暂时解决
-        return rand() % colorNumber;
-    }
     for (int l = 1; l < imgDataArrayVector.size(); ++l) {
         // 使用 imgData 这个类的内置方法
         int idx[3];
@@ -157,7 +166,7 @@ unsigned char DifferenceRenderer::calTemperatureDifference(int i, int j, int k) 
                        (static_cast<unsigned char *>(imgData->GetArrayPointer(imgDataArrayVector[l - 1], idx)))[0]));
     }
     if (result < 0 || result > 255) {
-        cout << "temperature difference < 0 || > 255\n";
+//        cout << "temperature difference < 0 || > 255\n";
 //        throw MyException("temperature difference < 0 || > 255");
     }
     if (result < 0) {

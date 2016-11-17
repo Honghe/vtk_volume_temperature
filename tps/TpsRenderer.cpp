@@ -29,7 +29,8 @@ void TpsRenderer::initVolumeDataMemory() {
 }
 
 void TpsRenderer::updateImgData() {
-    this->imgData = fpsRenderer->imgData;
+    // initVolumeDataMemory 方法中已引用了数据对象
+//    this->imgData = fpsRenderer->imgData;
 }
 
 void TpsRenderer::prepareVolume() {

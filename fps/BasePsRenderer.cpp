@@ -29,8 +29,8 @@ void BasePsRenderer::init(std::string fileBaseDir, std::string screenShotDir) {
     colorNumber = 256;
     rgbaLength = 4;
     data_axis_x = 80;
-    data_axis_z = 99;
     data_axis_y = 36;
+    data_axis_z = 99;
     temperature_min = 18;
     temperature_max = 30;
     vector<vector<double>> p((unsigned long) colorNumber, vector<double>(4));
