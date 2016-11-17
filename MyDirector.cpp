@@ -24,6 +24,10 @@ void MyDirector::init() {
     double leftViewport[4] = {0.0, 0.5, 0.5, 1.0};
     double leftViewport2[4] = {0.0, 0.0, 0.5, 0.5};
     double rightViewport[4] = {0.5, 0.5, 1.0, 1.0};
+
+//    double leftViewport[4] = {0.0, 0, 1, 1.0};
+//    double leftViewport2[4] = {0.0, 0.0, 0, 0};
+//    double rightViewport[4] = {1, 1, 1.0, 1.0};
     //
     fpsRenderer = new FpsRenderer(renderWin, renderInteractor, this);
     fpsRenderer->setViewPort(leftViewport);

@@ -28,8 +28,8 @@ void WindTimerCallback::Execute(vtkObject *vtkNotUsed(caller),
             for (int k = 0; k < wind_axis_z; ++k) {
                 int id = wind_axis_y * wind_axis_z * i + wind_axis_z * j + k;
                 double *point = points->GetPoint(id);
-                // 动动方向上随机加速
-                double point0 = point[0] - rand() % 20 * 0.05;
+                // 运动方向上随机加速
+                double point0 = point[0] - rand() % 20 * 0.1;
                 if (point0 > wind_axis_x - 1) {
                     point0 -= (wind_axis_x - 1);
                 } else if (point0 < 0) {

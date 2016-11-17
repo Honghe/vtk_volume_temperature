@@ -208,7 +208,7 @@ void FpsRenderer::addVolumePicker() {
 }
 
 void FpsRenderer::updateTemperatureTextWidget(std::string tmp) {
-    std::string header = "TMP\n";
+    std::string header = "TMP: ";
     if (temperatureTextActor != nullptr) {
         temperatureTextActor->SetInput(header.append(tmp + "℃").c_str());
     }
@@ -221,19 +221,24 @@ void FpsRenderer::addTemperatureTextWidget() {
             "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf");
     temperatureTextActor->GetTextProperty()->SetColor(0.9, .9, 0.9);
     temperatureTextActor->GetTextProperty()->SetFontSize(14);
-    temperatureTextActor->GetTextProperty()->SetJustificationToCentered();
+    // TODO 2016.11.17 设置 align 不生效
+    temperatureTextActor->GetTextProperty()->SetJustificationToLeft();
     temperatureTextActor->GetTextProperty()->SetVerticalJustificationToCentered();
-    const vtkSmartPointer<vtkTextRepresentation> &text_representation = vtkSmartPointer<vtkTextRepresentation>::New();
-    text_representation->GetPositionCoordinate()->SetValue(0.05, 0.92);
-    text_representation->GetPosition2Coordinate()->SetValue(0.06, 0.06);
+//    temperatureTextActor->GetScaledTextProperty()->SetJustificationToLeft();
+//    temperatureTextActor->GetScaledTextProperty()->SetVerticalJustificationToCentered();
+
     temperatureTextWidget = vtkSmartPointer<vtkTextWidget>::New();
-    temperatureTextWidget->SetRepresentation(text_representation);
     temperatureTextWidget->SetCurrentRenderer(renderer);
     temperatureTextWidget->SetInteractor(renderInteractor);
     temperatureTextWidget->SetTextActor(temperatureTextActor);
     temperatureTextWidget->SelectableOff();
-    temperatureTextWidget->GetBorderRepresentation()->SetShowBorderToOff();
+//    temperatureTextWidget->GetBorderRepresentation()->SetShowBorderToOff();
+    vtkTextRepresentation *pRepresentation = (vtkTextRepresentation *) temperatureTextWidget->GetRepresentation();
+    pRepresentation->SetPosition(0.05, 0.0);
+    pRepresentation->SetPosition2(0.90, 0.03);
     temperatureTextWidget->On();
+    temperatureTextActor->Print(cout);
+    temperatureTextWidget->Print(cout);
 }
 
 void FpsRenderer::addFileNameTextWidget() {
@@ -248,7 +253,7 @@ void FpsRenderer::addFileNameTextWidget() {
     text_widget->SetInteractor(renderInteractor);
     text_widget->SetTextActor(text_actor);
     text_widget->SelectableOff();
-//    text_widget->GetBorderRepresentation()->SetShowBorderToOff();
+    text_widget->GetBorderRepresentation()->SetShowBorderToOff();
     vtkTextRepresentation *pRepresentation = (vtkTextRepresentation *) text_widget->GetRepresentation();
     pRepresentation->SetPosition(0.3, 0.9);
     pRepresentation->SetPosition2(0.4, 0.05);
@@ -368,7 +373,7 @@ void FpsRenderer::addWindFlow() {
     windActor->GetProperty()->SetPointSize(2);
 
     const vtkSmartPointer<vtkTransform> &transForm = vtkSmartPointer<vtkTransform>::New();
-    transForm->Translate(data_axis_x - 20, 0, 0);
+    transForm->Translate(data_axis_x - 20, 0, 60);
     windActor->SetUserTransform(transForm);
 
     renderer->AddActor(windActor);
@@ -404,7 +409,7 @@ void FpsRenderer::addAirCondition() {
 
     const vtkSmartPointer<vtkTransform> &transForm = vtkSmartPointer<vtkTransform>::New();
     transForm->Translate(data_axis_x + 10, cubeSource->GetYLength() / 2,
-                         cubeSource->GetZLength() / 2);
+                         cubeSource->GetZLength() / 2 + 60);
     actor->SetUserTransform(transForm);
     // Add the actors to the scene
     renderer->AddActor(actor);
