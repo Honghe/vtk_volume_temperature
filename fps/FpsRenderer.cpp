@@ -13,6 +13,7 @@
 #include <MyDirector.h>
 #include <vtkCubeSource.h>
 #include <chrono>
+#include <vtkAssembly.h>
 #include <stdio.h>
 
 using namespace boost::filesystem;
@@ -249,7 +250,7 @@ void FpsRenderer::setStatusBarTextActor(vtkSmartPointer<vtkTextActor> textActor,
     textWidget->SetInteractor(renderInteractor);
     textWidget->SetTextActor(textActor);
     textWidget->SelectableOff();
-//    textWidget->GetBorderRepresentation()->SetShowBorderToOff();
+    textWidget->GetBorderRepresentation()->SetShowBorderToOff();
     vtkTextRepresentation *pRepresentation = (vtkTextRepresentation *) textWidget->GetRepresentation();
     pRepresentation->SetPosition(positionX1, statusBarPositionY1);
     pRepresentation->SetPosition2(positionX2, statusBarPositionY2);
@@ -347,7 +348,8 @@ void FpsRenderer::addWindFlow() {
         isAddWindFlow = true;
     }
 
-    int wind_axis_x = 30;
+    // create Wind flow
+    int wind_axis_x = 20;
     int wind_axis_y = 20;
     int wind_axis_z = 20;
     int windcolorNumber = wind_axis_x;
@@ -376,6 +378,7 @@ void FpsRenderer::addWindFlow() {
     }
 
     for (vtkIdType j = 0; j < (vtkIdType) points->GetNumberOfPoints(); ++j) {
+        // 只需要一个Cell就可以，所以点都属于此Cell
         vertices->InsertNextCell(1);
         vertices->InsertCellPoint(j);
     }
@@ -395,7 +398,7 @@ void FpsRenderer::addWindFlow() {
     for (int l = 0; l < windcolorNumber; ++l) {
         double *pDouble = lut->GetTableValue(l);
         // 离出风口越远，透明度越小
-        lut->SetTableValue(l, pDouble[0], pDouble[1], pDouble[2], float(l) / (windcolorNumber * 10) + 0.005);
+        lut->SetTableValue(l, pDouble[0], pDouble[1], pDouble[2], float(l) / (windcolorNumber * 5) + 0.05);
     }
 
     mapper->SetLookupTable(lut);
@@ -409,12 +412,6 @@ void FpsRenderer::addWindFlow() {
     windActor->SetProperty(actorProperty);
     windActor->GetProperty()->SetPointSize(2);
 
-    const vtkSmartPointer<vtkTransform> &transForm = vtkSmartPointer<vtkTransform>::New();
-    transForm->Translate(data_axis_x - 20, 0, 60);
-    windActor->SetUserTransform(transForm);
-
-    renderer->AddActor(windActor);
-
     vtkSmartPointer<WindTimerCallback> timerCallback = vtkSmartPointer<WindTimerCallback>::New();
     timerCallback->Setwind_axis_x(wind_axis_x);
     timerCallback->Setwind_axis_y(wind_axis_y);
@@ -425,29 +422,37 @@ void FpsRenderer::addWindFlow() {
     int interval = 30;
     int timerId = renderInteractor->CreateRepeatingTimer(interval);
     std::cout << "addWindFlow timerId: " << timerId << std::endl;
-}
 
-void FpsRenderer::addAirCondition() {
-    // Create a cube.
+    // Create a AirCondition cube.
     vtkSmartPointer<vtkCubeSource> cubeSource =
             vtkSmartPointer<vtkCubeSource>::New();
     cubeSource->SetXLength(3);
     cubeSource->SetYLength(20);
     cubeSource->SetZLength(20);
-
-    // Create a mapper and actor.
-    vtkSmartPointer<vtkPolyDataMapper> mapper =
+    // 使其生成的数据(0,0,0)与坐标世界坐标0重合
+    cubeSource->SetCenter(wind_axis_x, cubeSource->GetYLength() / 2.0,
+                          cubeSource->GetZLength() / 2.0);
+    // Create a mapper and airConditionActor.
+    vtkSmartPointer<vtkPolyDataMapper> airConditionmapper =
             vtkSmartPointer<vtkPolyDataMapper>::New();
-    mapper->SetInputConnection(cubeSource->GetOutputPort());
+    airConditionmapper->SetInputConnection(cubeSource->GetOutputPort());
 
-    vtkSmartPointer<vtkActor> actor =
+    vtkSmartPointer<vtkActor> airConditionActor =
             vtkSmartPointer<vtkActor>::New();
-    actor->SetMapper(mapper);
+    airConditionActor->SetMapper(airConditionmapper);
+    airConditionActor->GetProperty()->SetOpacity(0.95);
+
+    // Combine the sphere and cube into an assembly
+    // if hierarchy is deep may render slow
+    vtkSmartPointer<vtkAssembly> airConditionAssembly =
+            vtkSmartPointer<vtkAssembly>::New();
+    airConditionAssembly->AddPart(windActor);
+    airConditionAssembly->AddPart(airConditionActor);
 
     const vtkSmartPointer<vtkTransform> &transForm = vtkSmartPointer<vtkTransform>::New();
-    transForm->Translate(data_axis_x + 10, cubeSource->GetYLength() / 2,
-                         cubeSource->GetZLength() / 2 + 60);
-    actor->SetUserTransform(transForm);
-    // Add the actors to the scene
-    renderer->AddActor(actor);
+    transForm->Translate(60, 20, 30);
+    transForm->RotateZ(90);
+    airConditionAssembly->SetUserTransform(transForm);
+
+    renderer->AddActor(airConditionAssembly);
 }

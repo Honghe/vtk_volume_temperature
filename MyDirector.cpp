@@ -55,7 +55,6 @@ void MyDirector::init() {
     fpsRenderer->addRenderEndEventCallback();
     //
     fpsRenderer->addWindFlow();
-    fpsRenderer->addAirCondition();
 
     fpsRenderer->readFile(fpsRenderer->fileNames[0].string());
 
