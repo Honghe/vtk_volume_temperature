@@ -63,6 +63,7 @@ void MouseInteractorStyle::OnRightButtonDown() {
     std::cout << "Cell id is: " << picker->GetCellId() << std::endl;
 
     if (picker->GetCellId() != -1) {
+        fpsRenderer->updatePickPositionWidget(worldPosition[0], worldPosition[1], worldPosition[2]);
 
 //            std::cout << "Pick position is: " << worldPosition[0] << " " << worldPosition[1]
 //                      << " " << worldPosition[2] << endl;

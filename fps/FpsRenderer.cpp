@@ -29,6 +29,8 @@ void FpsRenderer::init(std::string fileBaseDir, std::string screenShotDir) {
     BasePsRenderer::init(fileBaseDir, screenShotDir);
     myDirector->fpsRendererInit(this);
     isAddWindFlow = false;
+    statusBarPositionY1 = 0.0;
+    statusBarPositionY2 = 0.03;
 }
 
 void FpsRenderer::initVolumeDataMemory() {
@@ -214,31 +216,58 @@ void FpsRenderer::updateTemperatureTextWidget(std::string tmp) {
     }
 }
 
-void FpsRenderer::addTemperatureTextWidget() {
-    temperatureTextActor = vtkSmartPointer<vtkTextActor>::New();
-    temperatureTextActor->GetTextProperty()->SetFontFamily(VTK_FONT_FILE);
-    temperatureTextActor->GetTextProperty()->SetFontFile(
-            "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf");
-    temperatureTextActor->GetTextProperty()->SetColor(0.9, .9, 0.9);
-    temperatureTextActor->GetTextProperty()->SetFontSize(14);
+void FpsRenderer::updatePickPositionWidget(float x, float y, float z) {
+//    std::string positionString = boost::str((boost::format(" Pick X: %.2f, Y: %.2f, Z: %.2f") % x % y % z));
+    // 传入的是实际长度的dm单位，转成cm整数显示
+    x *=10;
+    y *=10;
+    z *=10;
+    std::string positionString = boost::str((boost::format(" Pos(cm) X: %d, Y: %d, Z: %d") % int(x) % int(y) % int(z)));
+    if (pickPositionTextActor != nullptr) {
+        pickPositionTextActor->SetInput(positionString.c_str());
+    }
+}
 
-    temperatureTextWidget = vtkSmartPointer<vtkTextWidget>::New();
-    temperatureTextWidget->SetCurrentRenderer(renderer);
-    temperatureTextWidget->SetInteractor(renderInteractor);
-    temperatureTextWidget->SetTextActor(temperatureTextActor);
-    temperatureTextWidget->SelectableOff();
-    temperatureTextWidget->GetBorderRepresentation()->SetShowBorderToOff();
-    vtkTextRepresentation *pRepresentation = (vtkTextRepresentation *) temperatureTextWidget->GetRepresentation();
-    pRepresentation->SetPosition(0.05, 0.0);
-    pRepresentation->SetPosition2(0.90, 0.03);
+void FpsRenderer::setStatusBarTextActor(vtkSmartPointer<vtkTextActor> textActor,
+                                        vtkSmartPointer<vtkTextWidget> textWidget,
+                                        double positionX1, double positionX2) {
+    textActor->GetTextProperty()->SetFontFamily(VTK_FONT_FILE);
+    textActor->GetTextProperty()->SetFontFile(
+            "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf");
+    textActor->GetTextProperty()->SetColor(0.9, .9, 0.9);
+    textActor->GetTextProperty()->SetFontSize(14);
+
+    textWidget->SetCurrentRenderer(renderer);
+    textWidget->SetInteractor(renderInteractor);
+    textWidget->SetTextActor(textActor);
+    textWidget->SelectableOff();
+//    textWidget->GetBorderRepresentation()->SetShowBorderToOff();
+    vtkTextRepresentation *pRepresentation = (vtkTextRepresentation *) textWidget->GetRepresentation();
+    pRepresentation->SetPosition(positionX1, statusBarPositionY1);
+    pRepresentation->SetPosition2(positionX2, statusBarPositionY2);
 
     // TextActor 的 align 要在 vtkTextWidget 之后设置，不然会莫名被重置
-    temperatureTextActor->GetScaledTextProperty()->SetJustificationToLeft();
-    temperatureTextActor->GetScaledTextProperty()->SetVerticalJustificationToCentered();
-    temperatureTextActor->GetTextProperty()->SetJustificationToLeft();
-    temperatureTextActor->GetTextProperty()->SetVerticalJustificationToCentered();
+//    textActor->GetScaledTextProperty()->SetJustificationToLeft();
+//    textActor->GetScaledTextProperty()->SetVerticalJustificationToCentered();
+    textActor->GetTextProperty()->SetJustificationToLeft();
+    textActor->GetTextProperty()->SetVerticalJustificationToCentered();
+    textWidget->On();
+}
 
-    temperatureTextWidget->On();
+void FpsRenderer::addPickPositionTextWidget() {
+    pickPositionTextActor = vtkSmartPointer<vtkTextActor>::New();
+    pickPositionTextWidget = vtkSmartPointer<vtkTextWidget>::New();
+    vtkTextRepresentation *temperatureRepresentation = (vtkTextRepresentation *) temperatureTextWidget->GetRepresentation();
+    setStatusBarTextActor(pickPositionTextActor, pickPositionTextWidget,
+                          temperatureRepresentation->GetPosition()[0] + temperatureRepresentation->GetPosition2()[0],
+                          0.40);
+}
+
+void FpsRenderer::addTemperatureTextWidget() {
+    temperatureTextActor = vtkSmartPointer<vtkTextActor>::New();
+    temperatureTextWidget = vtkSmartPointer<vtkTextWidget>::New();
+    // 宽度设置不够大，导致在初始时文字即被拉伸，则后续窗口大小变化时文字的拉伸很奇怪，因此初始宽度要适当
+    setStatusBarTextActor(temperatureTextActor, temperatureTextWidget, 0.05, 0.15);
 }
 
 void FpsRenderer::addFileNameTextWidget() {

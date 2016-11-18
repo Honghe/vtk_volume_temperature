@@ -156,6 +156,19 @@ public:
     string lastFileName;
 
     static void *_readFiel_helper(void *context);
+
+    double statusBarPositionY1;
+    double statusBarPositionY2;
+
+    void setStatusBarTextActor(vtkSmartPointer<vtkTextActor> textActor, vtkSmartPointer<vtkTextWidget> textWidget,
+                               double positionX1, double positionX2);
+
+    void addPickPositionTextWidget();
+
+    vtkSmartPointer<vtkTextWidget> pickPositionTextWidget;
+    vtkSmartPointer<vtkTextActor> pickPositionTextActor;
+
+    void updatePickPositionWidget(float x, float y, float z);
 };
 
 

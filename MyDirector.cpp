@@ -43,6 +43,7 @@ void MyDirector::init() {
     fpsRenderer->addScalarBarWidget();
     fpsRenderer->addFileNameTextWidget();
     fpsRenderer->addTemperatureTextWidget();
+    fpsRenderer->addPickPositionTextWidget();
     fpsRenderer->listTemperatureFiles();
     fpsRenderer->addOrientationMarkerWidget();
     fpsRenderer->addCameraEventCallback();
