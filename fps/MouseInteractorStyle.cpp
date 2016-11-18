@@ -107,7 +107,6 @@ void MouseInteractorStyle::OnRightButtonDown() {
         vtkDataArray *scalars = pPointData->GetScalars("ImageScalars");
 
         for (int i = 0; i < selected->GetNumberOfPoints(); i++) {
-            std:
             {
                 double *pDouble = pPoints->GetPoint(i);
                 cout << "point " << i << ": ";
@@ -117,6 +116,14 @@ void MouseInteractorStyle::OnRightButtonDown() {
                 // 点的属性值
                 cout << " " << scalars->GetComponent(i, 0);
                 cout << endl;
+            }
+        }
+
+        // 保存选中的第一个点
+        if (selected->GetNumberOfPoints() > 0) {
+            fpsRenderer->isLastPickPoint = true;
+            for (int i = 0; i < 3; ++i) {
+                fpsRenderer->lastPickPoint[i] = pPoints->GetPoint(0)[i];
             }
         }
 

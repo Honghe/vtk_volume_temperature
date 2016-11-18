@@ -59,7 +59,7 @@ void MyDirector::init() {
 
     fpsRenderer->readFile(fpsRenderer->fileNames[0].string());
 
-//    batch = true;
+    batch = true;
     if (batch) {
         mkdir(screenShotDir.c_str(), 0744); // screenshot 图片保存目录
         fpsRenderer->setTimeEventObserver(100);

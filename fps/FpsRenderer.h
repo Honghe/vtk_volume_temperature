@@ -169,6 +169,11 @@ public:
     vtkSmartPointer<vtkTextActor> pickPositionTextActor;
 
     void updatePickPositionWidget(float x, float y, float z);
+
+    int lastPickPoint[3];
+    bool isLastPickPoint;
+
+    void updateLastPickPointTemperature();
 };
 
 

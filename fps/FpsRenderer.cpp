@@ -160,11 +160,19 @@ void *FpsRenderer::_readFile(std::string fileName) {
 
     // update MTime for pipeline can refresh.
     imgData->Modified();
+    updateLastPickPointTemperature();
     myDirector->fpsRendererReadFile();
 
     chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::microseconds>(t2 - t1).count();
     cout << "readFile used ms: " << duration / 1000 << endl;
+}
+
+void FpsRenderer::updateLastPickPointTemperature() {
+    if (isLastPickPoint) {
+        updateTemperatureTextWidget(
+                scalarToTemperature((static_cast<unsigned char *>(imgData->GetScalarPointer(lastPickPoint)))[0]));
+    }
 }
 
 void FpsRenderer::addScalarBarWidget() {
@@ -219,9 +227,9 @@ void FpsRenderer::updateTemperatureTextWidget(std::string tmp) {
 void FpsRenderer::updatePickPositionWidget(float x, float y, float z) {
 //    std::string positionString = boost::str((boost::format(" Pick X: %.2f, Y: %.2f, Z: %.2f") % x % y % z));
     // 传入的是实际长度的dm单位，转成cm整数显示
-    x *=10;
-    y *=10;
-    z *=10;
+    x *= 10;
+    y *= 10;
+    z *= 10;
     std::string positionString = boost::str((boost::format(" Pos(cm) X: %d, Y: %d, Z: %d") % int(x) % int(y) % int(z)));
     if (pickPositionTextActor != nullptr) {
         pickPositionTextActor->SetInput(positionString.c_str());
