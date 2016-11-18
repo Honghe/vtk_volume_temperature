@@ -221,24 +221,24 @@ void FpsRenderer::addTemperatureTextWidget() {
             "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf");
     temperatureTextActor->GetTextProperty()->SetColor(0.9, .9, 0.9);
     temperatureTextActor->GetTextProperty()->SetFontSize(14);
-    // TODO 2016.11.17 设置 align 不生效
-    temperatureTextActor->GetTextProperty()->SetJustificationToLeft();
-    temperatureTextActor->GetTextProperty()->SetVerticalJustificationToCentered();
-//    temperatureTextActor->GetScaledTextProperty()->SetJustificationToLeft();
-//    temperatureTextActor->GetScaledTextProperty()->SetVerticalJustificationToCentered();
 
     temperatureTextWidget = vtkSmartPointer<vtkTextWidget>::New();
     temperatureTextWidget->SetCurrentRenderer(renderer);
     temperatureTextWidget->SetInteractor(renderInteractor);
     temperatureTextWidget->SetTextActor(temperatureTextActor);
     temperatureTextWidget->SelectableOff();
-//    temperatureTextWidget->GetBorderRepresentation()->SetShowBorderToOff();
+    temperatureTextWidget->GetBorderRepresentation()->SetShowBorderToOff();
     vtkTextRepresentation *pRepresentation = (vtkTextRepresentation *) temperatureTextWidget->GetRepresentation();
     pRepresentation->SetPosition(0.05, 0.0);
     pRepresentation->SetPosition2(0.90, 0.03);
+
+    // TextActor 的 align 要在 vtkTextWidget 之后设置，不然会莫名被重置
+    temperatureTextActor->GetScaledTextProperty()->SetJustificationToLeft();
+    temperatureTextActor->GetScaledTextProperty()->SetVerticalJustificationToCentered();
+    temperatureTextActor->GetTextProperty()->SetJustificationToLeft();
+    temperatureTextActor->GetTextProperty()->SetVerticalJustificationToCentered();
+
     temperatureTextWidget->On();
-    temperatureTextActor->Print(cout);
-    temperatureTextWidget->Print(cout);
 }
 
 void FpsRenderer::addFileNameTextWidget() {
