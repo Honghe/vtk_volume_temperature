@@ -89,6 +89,9 @@ fabric.properties
 # .idea/misc.xml
 # *.ipr
 
+# by honhe
+cmake-build-debug/
+
 .idea
 output/
 *.gz

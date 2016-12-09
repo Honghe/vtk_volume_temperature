@@ -12,7 +12,7 @@ void MyDirector::init() {
     renderWin = vtkSmartPointer<vtkRenderWindow>::New();
     renderInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
     renderInteractor->SetRenderWindow(renderWin);
-    renderWin->SetSize(1000, 800);
+    renderWin->SetSize(1100, 800);
     // do anything after Initialize, otherwise will throw error
     renderInteractor->Initialize();
 
@@ -50,6 +50,7 @@ void MyDirector::init() {
     fpsRenderer->initVolumeDataMemory();
     fpsRenderer->setCamera();
     fpsRenderer->addGrid();
+    fpsRenderer->addGridWall();
     fpsRenderer->prepareVolume();
     fpsRenderer->addVolumePicker();
     fpsRenderer->addRenderEndEventCallback();
@@ -58,7 +59,7 @@ void MyDirector::init() {
 
     fpsRenderer->readFile(fpsRenderer->fileNames[0].string());
 
-    batch = true;
+//    batch = true;
     if (batch) {
         mkdir(screenShotDir.c_str(), 0744); // screenshot 图片保存目录
         fpsRenderer->setTimeEventObserver(100);

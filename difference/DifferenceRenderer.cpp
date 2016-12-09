@@ -43,8 +43,8 @@ void DifferenceRenderer::setCamera() {
     pCamera->SetPosition(0, 0, -170);
     double *position = pCamera->GetPosition();
 //        pCamera->SetClippingRange(20, 1000);  // 每次有事件导致Render后，会被重置。
-    pCamera->Elevation(30);
-    pCamera->Azimuth(-40);
+    pCamera->Elevation(35);
+    pCamera->Azimuth(-58);
 }
 
 void DifferenceRenderer::addScalarBarWidget() {

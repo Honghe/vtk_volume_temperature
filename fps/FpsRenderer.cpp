@@ -15,6 +15,8 @@
 #include <chrono>
 #include <vtkAssembly.h>
 #include <stdio.h>
+#include <vtkAppendPolyData.h>
+#include <vtkCleanPolyData.h>
 
 using namespace boost::filesystem;
 
@@ -310,8 +312,8 @@ void FpsRenderer::setCamera() {
     pCamera->SetPosition(0, 0, -170);
     double *position = pCamera->GetPosition();
 //        pCamera->SetClippingRange(20, 1000);  // 每次有事件导致Render后，会被重置。
-    pCamera->Elevation(30);
-    pCamera->Azimuth(-40);
+    pCamera->Elevation(40);
+    pCamera->Azimuth(-58);
     myDirector->fpsRendererSetCamera();
 }
 
@@ -398,7 +400,7 @@ void FpsRenderer::addWindFlow() {
     for (int l = 0; l < windcolorNumber; ++l) {
         double *pDouble = lut->GetTableValue(l);
         // 离出风口越远，透明度越小
-        lut->SetTableValue(l, pDouble[0], pDouble[1], pDouble[2], float(l) / (windcolorNumber * 5) + 0.05);
+        lut->SetTableValue(l, pDouble[0], pDouble[1], pDouble[2], float(l) / (windcolorNumber * 1) + 0.05);
     }
 
     mapper->SetLookupTable(lut);
@@ -440,7 +442,7 @@ void FpsRenderer::addWindFlow() {
     vtkSmartPointer<vtkActor> airConditionActor =
             vtkSmartPointer<vtkActor>::New();
     airConditionActor->SetMapper(airConditionmapper);
-    airConditionActor->GetProperty()->SetOpacity(0.95);
+    airConditionActor->GetProperty()->SetOpacity(0.99);
 
     // Combine the sphere and cube into an assembly
     // if hierarchy is deep may render slow
@@ -455,4 +457,180 @@ void FpsRenderer::addWindFlow() {
     airConditionAssembly->SetUserTransform(transForm);
 
     renderer->AddActor(airConditionAssembly);
+}
+
+void FpsRenderer::addGridWall() {
+    int data_axis_x = 80;
+    int data_axis_y = 36;
+    int data_axis_z = 99;
+    int thickNess = 4;      // 墙的厚度
+    int floorExtend = 20;   // 地板的延伸长度
+    int data_axis_x_delta = 2;  // X轴方向的上偏移，使墙角不重叠
+    int door_height = 22;
+    int door_width = 16;
+    int door_x_delta = 20;
+
+    std::vector<vtkAlgorithmOutput *> polys;
+// Combine the sphere and cube into an ssembly
+    wallPolyAssembly = vtkSmartPointer<vtkAssembly>::New();
+
+    //  四面墙的结构图
+    //                       这边开个小洞作为门
+    //                      ++
+    //  (0.0)      wall 1   |
+    //  +--> +--------------v ----+
+    //       |                    |
+    //       |                    |
+    //       |                    |
+    //       |                    |
+    //       |                    |
+    // wall2 |                    | wall4
+    //       |                    |
+    //       |                    |
+    //       |                    |
+    //       |                    |
+    //       |                    |
+    //       +--------------------+
+    //                wall3
+
+    // 一号墙上开个门，所以分为3个cube组合
+    const vtkSmartPointer<vtkCubeSource> &cubeSource1_1 = vtkSmartPointer<vtkCubeSource>::New();
+    cubeSource1_1->SetXLength(door_x_delta);
+    cubeSource1_1->SetYLength(data_axis_y);
+    cubeSource1_1->SetZLength(thickNess);
+    cubeSource1_1->SetCenter(data_axis_x - cubeSource1_1->GetXLength() / 2.0 - thickNess / 2.0, 0, 0);
+    cubeSource1_1->Update();
+
+    const vtkSmartPointer<vtkCubeSource> &cubeSource1_2 = vtkSmartPointer<vtkCubeSource>::New();
+    cubeSource1_2->SetXLength(data_axis_x - door_x_delta - door_width);
+    cubeSource1_2->SetYLength(data_axis_y);
+    cubeSource1_2->SetZLength(thickNess);
+    cubeSource1_2->SetCenter(cubeSource1_2->GetXLength() / 2.0, 0, 0);
+    cubeSource1_2->Update();
+
+    const vtkSmartPointer<vtkCubeSource> &cubeSource1_3 = vtkSmartPointer<vtkCubeSource>::New();
+    cubeSource1_3->SetXLength(door_width - data_axis_x_delta);
+    cubeSource1_3->SetYLength(data_axis_y - door_height);
+    cubeSource1_3->SetZLength(thickNess);
+    cubeSource1_3->SetCenter(cubeSource1_2->GetXLength() + cubeSource1_3->GetXLength() / 2.0,
+                             -(data_axis_y / 2.0 - door_height - cubeSource1_3->GetYLength() / 2.0), 0);
+    cubeSource1_3->Update();
+    // end 一号墙上开个门，所以分为3个cube组合
+
+    const vtkSmartPointer<vtkCubeSource> &cubeSource2 = vtkSmartPointer<vtkCubeSource>::New();
+    cubeSource2->SetXLength(thickNess);
+    cubeSource2->SetYLength(data_axis_y);
+    cubeSource2->SetZLength(data_axis_z + thickNess);
+    cubeSource2->SetCenter(-data_axis_x_delta, 0, data_axis_z / 2.0);
+    cubeSource2->Update();
+
+    const vtkSmartPointer<vtkCubeSource> &cubeSource3 = vtkSmartPointer<vtkCubeSource>::New();
+    cubeSource3->SetXLength(data_axis_x - data_axis_x_delta);
+    cubeSource3->SetYLength(data_axis_y);
+    cubeSource3->SetZLength(thickNess);
+    cubeSource3->SetCenter(cubeSource3->GetXLength() / 2.0, 0, data_axis_z);
+    cubeSource3->Update();
+
+    const vtkSmartPointer<vtkCubeSource> &cubeSource4 = vtkSmartPointer<vtkCubeSource>::New();
+    cubeSource4->SetXLength(thickNess);
+    cubeSource4->SetYLength(data_axis_y);
+    cubeSource4->SetZLength(data_axis_z + thickNess);
+    cubeSource4->SetCenter(data_axis_x, 0, data_axis_z / 2.0);
+    cubeSource4->Update();
+
+    const vtkSmartPointer<vtkCubeSource> &cubeSourceFloor = vtkSmartPointer<vtkCubeSource>::New();
+    cubeSourceFloor->SetXLength(data_axis_x + floorExtend);
+    cubeSourceFloor->SetYLength(thickNess);
+    cubeSourceFloor->SetZLength(data_axis_z + floorExtend);
+    cubeSourceFloor->SetCenter(data_axis_x / 2.0, -data_axis_y / 2.0, data_axis_z / 2.0);
+    cubeSourceFloor->Update();
+
+    // 组合1号墙
+    vtkSmartPointer<vtkAppendPolyData> wall1Poly =
+            vtkSmartPointer<vtkAppendPolyData>::New();
+    wall1Poly->AddInputData(cubeSource1_1->GetOutput());
+    wall1Poly->AddInputData(cubeSource1_2->GetOutput());
+    wall1Poly->AddInputData(cubeSource1_3->GetOutput());
+    wall1Poly->Update();
+
+    // Remove any duplicate points.
+    // 加上这个后会变暗，同时多了奇怪的分隔条
+//    vtkSmartPointer<vtkCleanPolyData> cleanFilter =
+//            vtkSmartPointer<vtkCleanPolyData>::New();
+//    cleanFilter->SetInputConnection(appendFilter->GetOutputPort());
+//    cleanFilter->Update();
+
+    polys.push_back(wall1Poly->GetOutputPort());
+    polys.push_back(cubeSource2->GetOutputPort());
+    polys.push_back(cubeSource3->GetOutputPort());
+    polys.push_back(cubeSource4->GetOutputPort());
+    polys.push_back(cubeSourceFloor->GetOutputPort());
+
+    for (auto &&item : polys) {
+        vtkSmartPointer<vtkPolyDataMapper> mapper =
+                vtkSmartPointer<vtkPolyDataMapper>::New();
+        mapper->SetInputConnection(item);
+        mapper->ScalarVisibilityOff();
+        vtkSmartPointer<vtkActor> actor =
+                vtkSmartPointer<vtkActor>::New();
+        actor->SetMapper(mapper);
+        wallPolyAssembly->AddPart(actor);
+    }
+
+    const vtkSmartPointer<vtkTransform> &transform = vtkSmartPointer<vtkTransform>::New();
+    transform->Translate(0, data_axis_y / 2.0, 0);
+    wallPolyAssembly->SetUserTransform(transform);
+
+    renderer->AddActor(wallPolyAssembly);
+}
+
+// 自定义排序方法
+//template<typename double, typename int>
+bool comparePairs(const std::pair<double, int> &lhs, const std::pair<double, int> &rhs) {
+    return lhs.first <= rhs.first;
+}
+
+void FpsRenderer::updateWall() {
+    vtkCamera *pCamera = renderer->GetActiveCamera();
+    double *cameraPosition;
+    cameraPosition = pCamera->GetPosition();
+//     遍历计算各墙与Camera的距离
+//     Extract each actor from the assembly and change its opacity
+    std::vector<double> distances;
+    vtkSmartPointer<vtkPropCollection> collection =
+            vtkSmartPointer<vtkPropCollection>::New();
+    wallPolyAssembly->GetActors(collection);
+    collection->InitTraversal();
+    std::vector<vtkActor *> actors;
+    // 就4个墙进行变化，地板不变化
+    for (vtkIdType i = 0; i < 4; i++) {
+        double *position;
+        vtkActor *pActor = vtkActor::SafeDownCast(collection->GetNextProp());
+        actors.push_back(pActor);
+        position = pActor->GetCenter();
+        distances.push_back(sqrt(pow(position[0] - cameraPosition[0], 2.0) +
+                                 pow(position[1] - cameraPosition[1], 2.0)) +
+                            pow(position[2] - cameraPosition[2], 2.0));
+    }
+    // 距离排序
+    typedef std::pair<double, int> mypair;
+    std::vector<mypair> distancesPair;
+    for (int j = 0; j < distances.size(); ++j) {
+        mypair p;
+        p.first = distances[j];
+        p.second = j;
+        distancesPair.push_back(p);
+    }
+    std::sort(distancesPair.begin(), distancesPair.end(), comparePairs);
+//     [<5,0>, <8,1>, <7,2>] >> 逆[<5,0>, <7,2>, <8,1>]
+    for (int k = 0; k < distancesPair.size(); ++k) {
+        vtkActor *pActor = actors[distancesPair[k].second];
+        // 写死只设置前两个为低透明
+        if (k <= 1) {
+            pActor->GetProperty()->SetOpacity(0.4);
+        } else {
+            pActor->GetProperty()->SetOpacity(1);
+        }
+    }
+    cout << "camera event done." << endl;
 }

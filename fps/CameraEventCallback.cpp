@@ -11,6 +11,7 @@ vtkStandardNewMacro(CameraEventCallback);
 void CameraEventCallback::Execute(vtkObject *caller, unsigned long eventId,
                                   void *vtkNotUsed(callData)) {
     fpsRenderer->myDirector->fpsRendererCameraUpdateEvent();
+    fpsRenderer->updateWall();
 }
 void CameraEventCallback::init(FpsRenderer *fpsRenderer) {
     this->fpsRenderer = fpsRenderer;

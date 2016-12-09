@@ -173,6 +173,12 @@ public:
     bool isLastPickPoint;
 
     void updateLastPickPointTemperature();
+
+    void addGridWall();
+
+    void updateWall();
+
+    vtkSmartPointer<vtkAssembly> wallPolyAssembly;
 };
 
 
