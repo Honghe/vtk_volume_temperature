@@ -20,24 +20,30 @@ void MyDirector::init() {
     // make output dir
     std::string screenShotDirBase("/home/honhe/Downloads/volume_render/temperature_output/");
     std::string screenShotDir = screenShotDirBase + "/" + getDate() + "/";
-    bool batch = false;
+    bool batch = false;     // 是否迭代依次读取文件夹中的文件，
+    show4Viewport = false;
+
     double leftViewport[4] = {0.0, 0.5, 0.5, 1.0};
     double leftViewport2[4] = {0.0, 0.0, 0.5, 0.5};
     double rightViewport[4] = {0.5, 0.5, 1.0, 1.0};
-
-//    double leftViewport[4] = {0.0, 0, 1, 1.0};
-//    double leftViewport2[4] = {0.0, 0.0, 0, 0};
-//    double rightViewport[4] = {1, 1, 1.0, 1.0};
+    if (!show4Viewport) {
+        leftViewport[0] = 0.0;
+        leftViewport[1] = 0.0;
+        leftViewport[2] = 1.0;
+        leftViewport[3] = 1.0;
+    }
     //
     fpsRenderer = new FpsRenderer(renderWin, renderInteractor, this);
     fpsRenderer->setViewPort(leftViewport);
     // TpsRenderer
     // set after fpsRender
-    tpsRenderer = new TpsRenderer(renderWin, renderInteractor, this);
-    tpsRenderer->setViewPort(rightViewport);
-    // Temperature Difference Renderer
-    differenceRenderer = new DifferenceRenderer(renderWin, renderInteractor, this);
-    differenceRenderer->setViewPort(leftViewport2);
+    if (show4Viewport) {
+        tpsRenderer = new TpsRenderer(renderWin, renderInteractor, this);
+        tpsRenderer->setViewPort(rightViewport);
+        // Temperature Difference Renderer
+        differenceRenderer = new DifferenceRenderer(renderWin, renderInteractor, this);
+        differenceRenderer->setViewPort(leftViewport2);
+    }
     //*
     fpsRenderer->init(fileBaseDir, screenShotDir);
     fpsRenderer->addScalarBarWidget();
@@ -72,54 +78,76 @@ void MyDirector::startInteractor() {
 }
 
 void MyDirector::fpsRendererInit(FpsRenderer *fpsRenderer) {
-    tpsRenderer->init(fpsRenderer);
-    differenceRenderer->init(fpsRenderer);
+    if (show4Viewport) {
+        tpsRenderer->init(fpsRenderer);
+        differenceRenderer->init(fpsRenderer);
+    }
 }
 
 void MyDirector::fpsRendererPrepareVolume() {
-    tpsRenderer->prepareVolume();
-    differenceRenderer->prepareVolume();
+    if (show4Viewport) {
+        tpsRenderer->prepareVolume();
+        differenceRenderer->prepareVolume();
+    }
 }
 
 void MyDirector::fpsRendererAddGrid() {
-    tpsRenderer->addGrid();
-    differenceRenderer->addGrid();
+    if (show4Viewport) {
+        tpsRenderer->addGrid();
+        differenceRenderer->addGrid();
+    }
 }
 
 void MyDirector::fpsRendererReadFile() {
-    tpsRenderer->updateImgData();
-    differenceRenderer->updateImgData();
+    if (show4Viewport) {
+        tpsRenderer->updateImgData();
+        differenceRenderer->updateImgData();
+    }
 }
 
 void MyDirector::fpsRendererRender() {
-    tpsRenderer->render();
-    differenceRenderer->render();
+    if (show4Viewport) {
+        tpsRenderer->render();
+        differenceRenderer->render();
+    }
 }
 
 void MyDirector::fpsRendererAddOrientationMarkerWidget() {
-    tpsRenderer->addOrientationMarkerWidget();
-    differenceRenderer->addOrientationMarkerWidget();
+    if (show4Viewport) {
+        tpsRenderer->addOrientationMarkerWidget();
+        differenceRenderer->addOrientationMarkerWidget();
+    }
 }
 
 void MyDirector::fpsRendererInitVolumeDataMemory() {
-    tpsRenderer->initVolumeDataMemory();
-    differenceRenderer->initVolumeDataMemory();
+    if (show4Viewport) {
+        tpsRenderer->initVolumeDataMemory();
+        differenceRenderer->initVolumeDataMemory();
+    }
 }
 
 void MyDirector::fpsRendererAddScalarBarWidget() {
-    tpsRenderer->addScalarBarWidget();
-    differenceRenderer->addScalarBarWidget();
+    if (show4Viewport) {
+        tpsRenderer->addScalarBarWidget();
+        differenceRenderer->addScalarBarWidget();
+    }
 }
 
 void MyDirector::fpsRendererSetCamera() {
-    tpsRenderer->setCamera();
-    differenceRenderer->setCamera();
+    if (show4Viewport) {
+        tpsRenderer->setCamera();
+        differenceRenderer->setCamera();
+    }
 }
 
 void MyDirector::fpsRendererCameraUpdateEvent() {
-    tpsRenderer->updateTpsCamera();
+    if (show4Viewport) {
+        tpsRenderer->updateTpsCamera();
+    }
 }
 
 void MyDirector::fpsRendererAddFileNameTextWidget() {
-    differenceRenderer->addTitleTextWidget();
+    if (show4Viewport) {
+        differenceRenderer->addTitleTextWidget();
+    }
 }

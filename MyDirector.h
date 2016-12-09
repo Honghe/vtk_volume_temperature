@@ -33,13 +33,17 @@ public:
     void fpsRenderUpdate();
 
     void fpsRendererInit(FpsRenderer *);
+
     void fpsRendererPrepareVolume();
+
     void fpsRendererAddGrid();
+
     void fpsRendererReadFile();
 
     void fpsRendererAddOrientationMarkerWidget();
 
     void fpsRendererInitVolumeDataMemory();
+
     void fpsRendererRender();
 
     vtkSmartPointer<vtkRenderWindow> renderWin;
@@ -56,6 +60,8 @@ public:
     DifferenceRenderer *differenceRenderer;
 
     void fpsRendererAddFileNameTextWidget();
+
+    bool show4Viewport = true; // 显示4个ViewPort，默认只显示4个
 };
 
 #endif //DEMO_VTK_TUTORIAL_MYDIRECTOR_H

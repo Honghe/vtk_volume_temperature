@@ -627,7 +627,7 @@ void FpsRenderer::updateWall() {
         vtkActor *pActor = actors[distancesPair[k].second];
         // 写死只设置前两个为低透明
         if (k <= 1) {
-            pActor->GetProperty()->SetOpacity(0.4);
+            pActor->GetProperty()->SetOpacity(0.3);
         } else {
             pActor->GetProperty()->SetOpacity(1);
         }
