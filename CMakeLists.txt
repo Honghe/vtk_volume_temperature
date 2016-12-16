@@ -28,6 +28,7 @@ set(SOURCE_FILES
         fps/WindTimerCallback.cpp
         fps/WindTimerCallback.cpp
         fps/RenderEndEventCallback.cpp
+        fps/WindActorWrapper.cpp
         )
 
 set(name "vr_temperature_1103")

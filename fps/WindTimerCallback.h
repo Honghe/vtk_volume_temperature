@@ -10,6 +10,7 @@
 #include <vtkCommand.h>
 #include <vtkSmartPointer.h>
 #include <vtkUnsignedCharArray.h>
+#include "FpsRenderer.h"
 
 class WindTimerCallback : public vtkCommand {
 public:
@@ -19,15 +20,9 @@ vtkTypeMacro(WindTimerCallback, vtkCommand);
 
     vtkSmartPointer<vtkRenderWindow> renderWindow;
 
-    void
-    init(vtkSmartPointer<vtkRenderWindow> renderWindow, vtkSmartPointer<vtkPoints> points,
-         vtkSmartPointer<vtkUnsignedCharArray> scalars);
-
     virtual void Execute(vtkObject *caller, unsigned long eventId,
                          void *vtkNotUsed(callData));
 
-    vtkSmartPointer<vtkUnsignedCharArray> scalars;
-    vtkSmartPointer<vtkPoints> points;
     int wind_axis_x;
     int wind_axis_y;
     int wind_axis_z;
@@ -39,6 +34,10 @@ vtkTypeMacro(WindTimerCallback, vtkCommand);
     vtkSetMacro(wind_axis_x, int);
     vtkSetMacro(wind_axis_y, int);
     vtkSetMacro(wind_axis_z, int);
+
+    void init(vtkSmartPointer<vtkRenderWindow> renderWindow,FpsRenderer *fpsRenderer);
+
+    FpsRenderer *fpsRenderer;
 };
 
 

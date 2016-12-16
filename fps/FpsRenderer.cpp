@@ -14,9 +14,11 @@
 #include <vtkCubeSource.h>
 #include <chrono>
 #include <vtkAssembly.h>
-#include <stdio.h>
+#include "WindActorWrapper.h"
 #include <vtkAppendPolyData.h>
 #include <vtkCleanPolyData.h>
+#include <vtkFrustumSource.h>
+#include <vtkPlanes.h>
 
 using namespace boost::filesystem;
 
@@ -312,8 +314,8 @@ void FpsRenderer::setCamera() {
     pCamera->SetPosition(0, 0, -170);
     double *position = pCamera->GetPosition();
 //        pCamera->SetClippingRange(20, 1000);  // 每次有事件导致Render后，会被重置。
-    pCamera->Elevation(40);
-    pCamera->Azimuth(-58);
+//    pCamera->Elevation(40);
+//    pCamera->Azimuth(-58);
     myDirector->fpsRendererSetCamera();
 }
 
@@ -351,112 +353,97 @@ void FpsRenderer::addWindFlow() {
     }
 
     // create Wind flow
-    int wind_axis_x = 20;
-    int wind_axis_y = 20;
-    int wind_axis_z = 20;
-    int windcolorNumber = wind_axis_x;
+    int airConditionEdgeLength = 18;
+    int windFlowDegree = 5;
+    //
+    const vtkSmartPointer<vtkActor> &airConditionMachine = createAirConditionMachine();
 
-    const vtkSmartPointer<vtkPolyData> &polyData = vtkSmartPointer<vtkPolyData>::New();
-    const vtkSmartPointer<vtkPoints> &points = vtkSmartPointer<vtkPoints>::New();
-    const vtkSmartPointer<vtkCellArray> &vertices = vtkSmartPointer<vtkCellArray>::New();
-    const vtkSmartPointer<vtkUnsignedCharArray> &scalars = vtkSmartPointer<vtkUnsignedCharArray>::New();
+    // #1
+    windActorWrapper1 = new WindActorWrapper(renderWin, renderInteractor);
+    windActorWrapper1->init();
+    windActorWrapper1->createData();
+    const vtkSmartPointer<vtkTransform> &transform1 = vtkSmartPointer<vtkTransform>::New();
+    transform1->RotateY(windFlowDegree);
+    transform1->Translate(-((windActorWrapper1->actor->GetXRange()[1] - windActorWrapper1->actor->GetXRange()[0]) +
+                            airConditionEdgeLength / 2.0),
+                          -windActorWrapper1->actor->GetYRange()[1] / 2.0,
+                          0);
+    windActorWrapper1->actor->SetUserTransform(transform1);
 
-    points->SetDataTypeToFloat();
-    points->Reset();
+    // #2
+    windActorWrapper2 = new WindActorWrapper(renderWin, renderInteractor);
+    windActorWrapper2->init();
+    windActorWrapper2->createData();
+    const vtkSmartPointer<vtkTransform> &transform2 = vtkSmartPointer<vtkTransform>::New();
+    transform2->PostMultiply();     // 右乘
+    // 可以多个链接变换
+    transform2->RotateZ(180);
+    transform2->Translate((windActorWrapper2->actor->GetXRange()[1] - windActorWrapper2->actor->GetXRange()[0]) +
+                          (airConditionEdgeLength) / 2.0, 0, 0);
+    transform2->Translate(0, 10, 0);
+    transform2->RotateY(-windFlowDegree);
+    windActorWrapper2->actor->SetUserTransform(transform2);
 
-    scalars->SetName("Scalar");
-    for (int i = 0; i < wind_axis_x; ++i) {
-        for (int j = 0; j < wind_axis_y; ++j) {
-            for (int k = 0; k < wind_axis_z; ++k) {
-                double x = i - rand() % 20 * 0.05;
-                // 主要初始给个随机，随后可以不用偏移，如何随后随机偏移的话看过去动态比较厉害
-                double y = j - (rand() % 20 - 10) * 0.05;
-                double z = k - (rand() % 20 - 10) * 0.05;
-                points->InsertNextPoint(x, y, z);
-                // scalar 用作颜色渲染
-                scalars->InsertNextValue(i);
-            }
-        }
-    }
+    // #3
+    windActorWrapper3 = new WindActorWrapper(renderWin, renderInteractor);
+    windActorWrapper3->init();
+    windActorWrapper3->createData();
+    const vtkSmartPointer<vtkTransform> &transform3 = vtkSmartPointer<vtkTransform>::New();
+    transform3->PostMultiply();     // 右乘
+    // 可以多个链接变换
+    transform3->RotateZ(90);
+    // 注意，上面 Rotatez后，这里的x轴方向就要对应取GetYRange
+    transform3->Translate((windActorWrapper3->actor->GetYRange()[1] - windActorWrapper3->actor->GetYRange()[0]) / 2.0,
+                          -((windActorWrapper3->actor->GetXRange()[1] - windActorWrapper3->actor->GetXRange()[0]) +
+                            airConditionEdgeLength / 2.0),
+                          0);
+    transform3->RotateX(-windFlowDegree);
+    windActorWrapper3->actor->SetUserTransform(transform3);
 
-    for (vtkIdType j = 0; j < (vtkIdType) points->GetNumberOfPoints(); ++j) {
-        // 只需要一个Cell就可以，所以点都属于此Cell
-        vertices->InsertNextCell(1);
-        vertices->InsertCellPoint(j);
-    }
-    polyData->SetPoints(points);
-    polyData->SetVerts(vertices);
-    polyData->GetPointData()->SetScalars(scalars);
-    polyData->Modified();
-
-    vtkSmartPointer<vtkPolyDataMapper> mapper =
-            vtkSmartPointer<vtkPolyDataMapper>::New();
-    mapper->SetInputData(polyData);
-    mapper->SetScalarRange(0, windcolorNumber - 1);
-
-    const vtkSmartPointer<vtkLookupTable> &lut = vtkSmartPointer<vtkLookupTable>::New();
-    lut->SetNumberOfTableValues(windcolorNumber);
-    lut->Build();
-    for (int l = 0; l < windcolorNumber; ++l) {
-        double *pDouble = lut->GetTableValue(l);
-        // 离出风口越远，透明度越小
-        lut->SetTableValue(l, pDouble[0], pDouble[1], pDouble[2], float(l) / (windcolorNumber * 1) + 0.05);
-    }
-
-    mapper->SetLookupTable(lut);
-    mapper->SetColorModeToMapScalars();
-    mapper->SetScalarModeToUsePointData();
-
-    const vtkSmartPointer<vtkProperty> actorProperty = vtkSmartPointer<vtkProperty>::New();
-
-    windActor = vtkSmartPointer<vtkActor>::New();
-    windActor->SetMapper(mapper);
-    windActor->SetProperty(actorProperty);
-    windActor->GetProperty()->SetPointSize(2);
-
-    vtkSmartPointer<WindTimerCallback> timerCallback = vtkSmartPointer<WindTimerCallback>::New();
-    timerCallback->Setwind_axis_x(wind_axis_x);
-    timerCallback->Setwind_axis_y(wind_axis_y);
-    timerCallback->Setwind_axis_z(wind_axis_z);
-
-    timerCallback->init(renderWin, points, scalars);
-    renderInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);
-    int interval = 30;
-    int timerId = renderInteractor->CreateRepeatingTimer(interval);
-    std::cout << "addWindFlow timerId: " << timerId << std::endl;
-
-    // Create a AirCondition cube.
-    vtkSmartPointer<vtkCubeSource> cubeSource =
-            vtkSmartPointer<vtkCubeSource>::New();
-    cubeSource->SetXLength(3);
-    cubeSource->SetYLength(20);
-    cubeSource->SetZLength(20);
-    // 使其生成的数据(0,0,0)与坐标世界坐标0重合
-    cubeSource->SetCenter(wind_axis_x, cubeSource->GetYLength() / 2.0,
-                          cubeSource->GetZLength() / 2.0);
-    // Create a mapper and airConditionActor.
-    vtkSmartPointer<vtkPolyDataMapper> airConditionmapper =
-            vtkSmartPointer<vtkPolyDataMapper>::New();
-    airConditionmapper->SetInputConnection(cubeSource->GetOutputPort());
-
-    vtkSmartPointer<vtkActor> airConditionActor =
-            vtkSmartPointer<vtkActor>::New();
-    airConditionActor->SetMapper(airConditionmapper);
-    airConditionActor->GetProperty()->SetOpacity(0.99);
+    // #4
+    windActorWrapper4 = new WindActorWrapper(renderWin, renderInteractor);
+    windActorWrapper4->init();
+    windActorWrapper4->createData();
+    const vtkSmartPointer<vtkTransform> &transform4 = vtkSmartPointer<vtkTransform>::New();
+    transform4->PostMultiply();     // 右乘
+    // 可以多个链接变换
+    transform4->RotateZ(-90);
+    //
+    transform4->Translate(-(windActorWrapper4->actor->GetYRange()[1] - windActorWrapper4->actor->GetYRange()[0]) / 2.0,
+                          ((windActorWrapper4->actor->GetXRange()[1] - windActorWrapper4->actor->GetXRange()[0]) +
+                           airConditionEdgeLength / 2.0),
+                          0);
+    transform4->RotateX(windFlowDegree);
+    windActorWrapper4->actor->SetUserTransform(transform4);
 
     // Combine the sphere and cube into an assembly
-    // if hierarchy is deep may render slow
-    vtkSmartPointer<vtkAssembly> airConditionAssembly =
+    vtkSmartPointer<vtkAssembly> assembly =
             vtkSmartPointer<vtkAssembly>::New();
-    airConditionAssembly->AddPart(windActor);
-    airConditionAssembly->AddPart(airConditionActor);
+    assembly->AddPart(windActorWrapper1->actor);
+    assembly->AddPart(windActorWrapper2->actor);
+    assembly->AddPart(windActorWrapper3->actor);
+    assembly->AddPart(windActorWrapper4->actor);
+    assembly->AddPart(airConditionMachine);
 
     const vtkSmartPointer<vtkTransform> &transForm = vtkSmartPointer<vtkTransform>::New();
-    transForm->Translate(60, 20, 30);
-    transForm->RotateZ(90);
-    airConditionAssembly->SetUserTransform(transForm);
+    transForm->Translate(40, 40, 40);
+    transForm->RotateX(90);
+    assembly->SetUserTransform(transForm);
 
-    renderer->AddActor(airConditionAssembly);
+    renderer->AddActor(assembly);
+
+    vtkSmartPointer<WindTimerCallback> timerCallback = vtkSmartPointer<WindTimerCallback>::New();
+    timerCallback->init(renderWin, this);
+    renderInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);
+    int interval = 30;
+    renderInteractor->CreateRepeatingTimer(interval);
+}
+
+void FpsRenderer::refreshWindFlow() {
+    windActorWrapper1->refreshWind();
+    windActorWrapper2->refreshWind();
+    windActorWrapper3->refreshWind();
+    windActorWrapper4->refreshWind();
 }
 
 void FpsRenderer::addGridWall() {
@@ -627,10 +614,52 @@ void FpsRenderer::updateWall() {
         vtkActor *pActor = actors[distancesPair[k].second];
         // 写死只设置前两个为低透明
         if (k <= 1) {
-            pActor->GetProperty()->SetOpacity(0.3);
+            pActor->GetProperty()->SetOpacity(0.05);
+//            pActor->GetProperty()->SetRepresentationToWireframe();
         } else {
+            pActor->GetProperty()->SetRepresentationToSurface();
             pActor->GetProperty()->SetOpacity(1);
         }
     }
-    cout << "camera event done." << endl;
+}
+
+vtkSmartPointer<vtkActor> FpsRenderer::createAirConditionMachine() {
+    vtkSmartPointer<vtkCamera> camera =
+            vtkSmartPointer<vtkCamera>::New();
+    double planesArray[24];
+
+    camera->GetFrustumPlanes(1, planesArray);
+
+    // 通过6个面放大截锥大小
+    int scale = 40;
+    for (int i = 0; i < 6; ++i) {
+        planesArray[3 + i * 4] *= scale;
+    }
+    // 截断成合适的形状
+    planesArray[18] = 1;
+    planesArray[19] = 0;
+
+    planesArray[22] = -10;
+    planesArray[23] = scale;
+
+    vtkSmartPointer<vtkPlanes> planes =
+            vtkSmartPointer<vtkPlanes>::New();
+    planes->SetFrustumPlanes(planesArray);
+
+    vtkSmartPointer<vtkFrustumSource> frustumSource =
+            vtkSmartPointer<vtkFrustumSource>::New();
+    frustumSource->ShowLinesOn();
+    frustumSource->SetPlanes(planes);
+    frustumSource->Update();
+
+    vtkPolyData *frustum = frustumSource->GetOutput();
+
+    vtkSmartPointer<vtkPolyDataMapper> mapper =
+            vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputData(frustum);
+
+    const vtkSmartPointer<vtkActor> &airConditionMachine = vtkSmartPointer<vtkActor>::New();
+    airConditionMachine->SetMapper(mapper);
+    airConditionMachine->GetProperty()->SetOpacity(0.9);
+    return airConditionMachine;
 }

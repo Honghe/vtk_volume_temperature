@@ -66,7 +66,7 @@
 using namespace std;
 using namespace boost::filesystem;
 
-
+class WindActorWrapper;
 class MyDirector;
 
 /**
@@ -179,6 +179,14 @@ public:
     void updateWall();
 
     vtkSmartPointer<vtkAssembly> wallPolyAssembly;
+    WindActorWrapper *windActorWrapper1;
+    WindActorWrapper *windActorWrapper2;
+    WindActorWrapper *windActorWrapper3;
+    WindActorWrapper *windActorWrapper4;
+
+    vtkSmartPointer<vtkActor> createAirConditionMachine();
+
+    void refreshWindFlow();
 };
 
 
