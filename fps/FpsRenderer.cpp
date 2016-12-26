@@ -428,6 +428,7 @@ void FpsRenderer::addWindFlow() {
     const vtkSmartPointer<vtkTransform> &transForm = vtkSmartPointer<vtkTransform>::New();
     transForm->Translate(40, 40, 40);
     transForm->RotateX(90);
+    // 移动至房间模型的顶上
     assembly->SetUserTransform(transForm);
 
     renderer->AddActor(assembly);
@@ -461,7 +462,7 @@ void FpsRenderer::addGridWall() {
 // Combine the sphere and cube into an ssembly
     wallPolyAssembly = vtkSmartPointer<vtkAssembly>::New();
 
-    //  四面墙的结构图
+    //  四面墙体的结构图
     //                       这边开个小洞作为门
     //                      ++
     //  (0.0)      wall 1   |
@@ -589,7 +590,7 @@ void FpsRenderer::updateWall() {
     wallPolyAssembly->GetActors(collection);
     collection->InitTraversal();
     std::vector<vtkActor *> actors;
-    // 就4个墙进行变化，地板不变化
+    // 就4个墙进行透明度变化，地板不变化
     for (vtkIdType i = 0; i < 4; i++) {
         double *position;
         vtkActor *pActor = vtkActor::SafeDownCast(collection->GetNextProp());

@@ -9,19 +9,20 @@ MyDirector::MyDirector() {
 }
 
 void MyDirector::init() {
+    bool batch = false;     // true 依次读取文件夹中的文件逐帧渲染，false 只显示第一帧的文件数据
+    show4Viewport = false;  // 是否显示4个 Viewport, false 只显示主 Viewport
+    // 温度源数据的文件目录
+    std::string fileBaseDir("/home/honhe/ClionProjects/rj_volume_temperature/example_data");
+    // 截屏的输出目录
+    std::string screenShotDirBase("/home/honhe/Downloads/volume_render/temperature_output/");
+    std::string screenShotDir = screenShotDirBase + "/" + getDate() + "/";
+
     renderWin = vtkSmartPointer<vtkRenderWindow>::New();
     renderInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
     renderInteractor->SetRenderWindow(renderWin);
     renderWin->SetSize(1100, 800);
     // do anything after Initialize, otherwise will throw error
     renderInteractor->Initialize();
-
-    std::string fileBaseDir("/home/honhe/Downloads/volume_render/temperature_data/2016-11-02");
-    // make output dir
-    std::string screenShotDirBase("/home/honhe/Downloads/volume_render/temperature_output/");
-    std::string screenShotDir = screenShotDirBase + "/" + getDate() + "/";
-    bool batch = false;     // 是否迭代依次读取文件夹中的文件，
-    show4Viewport = false;
 
     double leftViewport[4] = {0.0, 0.5, 0.5, 1.0};
     double leftViewport2[4] = {0.0, 0.0, 0.5, 0.5};
@@ -65,7 +66,6 @@ void MyDirector::init() {
 
     fpsRenderer->readFile(fpsRenderer->fileNames[0].string());
 
-    batch = true;
     if (batch) {
         mkdir(screenShotDir.c_str(), 0744); // screenshot 图片保存目录
         fpsRenderer->setTimeEventObserver(100);

@@ -35,6 +35,25 @@ void WindActorWrapper::createData() {
     points->SetDataTypeToFloat();
     points->Reset();
 
+// 风的粒子系统所在结构体模型
+//               Y
+//               ^
+//               |
+//               |            粒子的运动方向
+//               |        <-----------------+
+//               |
+//               |
+//              XX----------------------+
+//           XXXX|                    XXX
+//         +------------------------XXX |
+//         |     |                  |   |
+//         |     |                  |   |
+//         |    XX--------------------XXX------->X
+//         |  XXX                   |XX
+//         +------------------------+
+//        XXX
+//        Z轴
+
     scalars->SetName("Scalar");
     for (int i = 0; i < data_axis_x; ++i) {
         for (int j = 0; j < data_axis_y; ++j) {
@@ -108,8 +127,7 @@ void WindActorWrapper::refreshWind() {
                 for (int l = 0; l < 4; ++l) {
                     id += l;
                     points->GetPoint(id, point);
-
-                    // 动动方向上加速
+                    // 动动方向上加速，运动方向为向模型原始数据(未Transform)的负X轴方向动运
                     double xDelta = rand() % 20 * 0.1 * (((float) point[0] / data_axis_x));
                     double pointx = point[0] - xDelta;
                     // yz轴方向上弯曲，模拟抛物线
