@@ -31,7 +31,7 @@
     ├── tps                                 // 第三视角的Viewport
     │   ├── TpsRenderer.cpp
     │   └── TpsRenderer.h
-    └── vr_temperature_1103.cpp             // 入口
+    ├── vr_temperature_1103.cpp             // 入口
     └── example_data                        // 示例数据的目录
 
 
