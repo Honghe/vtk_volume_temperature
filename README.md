@@ -41,4 +41,4 @@
 
 ## Snapshot
 
-[](./snapshot/demo.png)
+![](./snapshot/demo.png)
